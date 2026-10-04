@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>拍摄策划工作台 v1.0.12</title>
+<title>拍摄策划工作台 v1.0.13</title>
 <style>
 /* ============================================================
    主题注册表 —— 新增主题只需往这里加一组 token 值
@@ -483,7 +483,7 @@ body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
     <div>
       <div class="vt">
         <h1>拍摄策划工作台</h1>
-        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.12</span>
+        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.13</span>
       </div>
       <div class="sub">T1-1 模板 v3.0 · 12 节（编号 0–11）</div>
     </div>
@@ -630,6 +630,55 @@ function lsStr(key, fallback){
   return (s === null) ? (fallback === undefined ? null : fallback) : s;
 }
 
+/* ---- lsArr：数组专用读取器（v1.0.13 新增）----
+   血泪教训 #2（见 BC-20261005 白屏故障 · B 面）：v1.0.12 的 guard 只校验了
+   「最外层是不是数组」，挡不住「数组里塞了非对象元素」。
+   只要 sw_models / sw_venues 里出现一个 null / 数字 / 字符串，
+   渲染时 `x.姓名` / `x.id` 立刻抛 TypeError → 整段脚本终止 → 又是白屏。
+
+   这是同一缺陷的第二层：v1.0.12 修了「外层」（能否 parse 出数组），
+   没修「内层」（数组元素是否合形）。修法放在读取处而非各个渲染处——
+   渲染调用点有 8+ 处（MODELS.map / VENUES.map / find / filter / reduce），
+   逐个加防护必然漏；在唯一入口过滤一次，全部调用点自动安全。
+
+   filter 规则：保留「非 null 的普通对象」。脏元素直接剔除并备份原值，
+   用户损失的是本就不可能渲染的那几条脏记录，换来的是页面永不白屏。 */
+function lsArr(key){
+  const raw = lsJSON(key, [], Array.isArray);
+  const clean = raw.filter(x => x && typeof x === 'object' && !Array.isArray(x));
+  if (clean.length !== raw.length){
+    const old = lsRaw(key);
+    if (old !== null) lsSet(key + '__broken', old);
+    lsSet(key, JSON.stringify(clean));
+    if (window.console && console.warn)
+      console.warn('[safeLS] ' + key + ' 含 ' + (raw.length - clean.length) + ' 条非法元素，已剔除');
+  }
+  return clean;
+}
+
+/* ---- lsDoc：策划案正文读取器（v1.0.13 修复）----
+   v1.0.12 只校验了「根是不是对象」，`{s0:null}` 能顺利通过校验并整份覆盖默认值。
+   后果：s0 变 null → 首个读 `D.s0.撰写日期` 的地方就抛错 → 白屏。
+
+   修法：以默认值 D 为模板做**浅层合并**，且逐节校验——
+   只要某一节不是普通对象，就丢弃该节、保留默认值（其余正常节照常恢复）。
+   同时在读取期就把 s0 补全（不依赖后面那行 if(!D.s0.撰写日期)，
+   因为它在 s0=null 时会二次抛错）。 */
+function lsDoc(key, def, opts){
+  const c = lsJSON(key, null, v => v && typeof v === 'object' && !Array.isArray(v), opts);
+  if (!c) return null;
+  const out = {};
+  for (const k in def){
+    const dv = def[k], cv = c[k];
+    out[k] = (dv && typeof dv === 'object' && !Array.isArray(dv))
+      ? (cv && typeof cv === 'object' && !Array.isArray(cv) ? Object.assign({}, dv, cv) : dv)
+      : (cv === undefined ? dv : cv);
+  }
+  /* 补全 s0 缺省字段：编号流水 / 日期都依赖它，缺一个就断链 */
+  if (out.s0 && def.s0) for (const k in def.s0) if (out.s0[k] === undefined) out.s0[k] = def.s0[k];
+  return out;
+}
+
 /* 供电调试：一键清空本工具的全部键（含损坏备份），恢复出厂 */
 function lsPurgeAll(){
   const keys = ['sw_doc_v01','sw_usedno','sw_models','sw_venues','sw_solar_override',
@@ -665,7 +714,10 @@ const THEME_NAMES = { light:'☀ 浅色', dark:'☾ 暗色' };
 const AUTO_NO = {
   prefix: 'CX',
   /* v1.0.12：改走 lsJSON，脏数据/存储不可用一律回退空对象，
-     绝不再因单个键损坏而中断整段脚本（原为裸 JSON.parse，白屏元凶之一） */
+     绝不再因单个键损坏而中断整段脚本（原为裸 JSON.parse，白屏元凶之一）
+     v1.0.13：guard 补 !Array.isArray —— 空数组 [] 也能"是对象"，
+     一旦残留成数组，reserve() 写 this.used[k] 会静默丢弃（数组不认字符串键），
+     编号流水从此永不前进，同一天反复给出 CX-YYYYMMDD-01。 */
   used: lsJSON('sw_usedno', {}, v => v && typeof v === 'object' && !Array.isArray(v)),
   key(d){ return this.prefix+'-'+(d||'').replace(/-/g,''); },
   /* 生成下一个可用编号；baseDate 为空则用今天 */
@@ -675,13 +727,17 @@ const AUTO_NO = {
     return { no: k+'-'+String(n).padStart(2,'0'), key: k, seq: n };
   },
   reserve(k, seq){
+    /* v1.0.13：写前再兜底一次。used 若因任何原因不是普通对象（被外部代码
+       换成数组 / 置为 null），先在原地复位，避免 `this.used[k]=...` 静默失效
+       → 编号流水停滞 → 同一天反复给出 -01，撞号且无从察觉。 */
+    if (!this.used || typeof this.used !== 'object' || Array.isArray(this.used)) this.used = {};
     this.used[k] = Math.max(this.used[k]||0, seq);
-    localStorage.setItem('sw_usedno', JSON.stringify(this.used));
+    lsSet('sw_usedno', JSON.stringify(this.used));
   },
   release(k, seq){
     /* 只回退「当前最大且为末位」的情况，避免撞号 */
     if(this.used[k]===seq){ delete this.used[k];
-      localStorage.setItem('sw_usedno', JSON.stringify(this.used)); }
+      lsSet('sw_usedno', JSON.stringify(this.used)); }
   },
   preview(baseDate){
     const x = this.next(baseDate);
@@ -969,7 +1025,7 @@ function solarOvrHtml(){
       结果「原型 v0.1」被当成工具版本 —— 用户测试的线上版其实早已迭代过多轮，
       页面却还写着 v0.1，版本对不上。这是版本标注必须独立成徽章的原因。
    ========================================================================== */
-const APP_VER='v1.0.12', TPL_VER='v3.0';
+const APP_VER='v1.0.13', TPL_VER='v3.0';
 const LS_MODEL='sw_models', LS_VENUE='sw_venues';
 /* v1.0.12：均改走 lsJSON + 数组结构校验。
    原为裸 JSON.parse(localStorage.getItem(...))，是该键被污染时白屏的直接原因。
@@ -978,18 +1034,21 @@ const LS_MODEL='sw_models', LS_VENUE='sw_venues';
    不再连带整页瘫痪 —— 这是本次修复的核心。 */
 const isModelArr  = v => Array.isArray(v);
 const isVenueArr  = v => Array.isArray(v);
-let MODELS = lsJSON(LS_MODEL, [], isModelArr);   // [{姓名,身高,体重,样图,备注,createdAt,updatedAt}]
-let VENUES = lsJSON(LS_VENUE, [], isVenueArr);   // [{id,名称,所在区,适配风格,时效性,门票,简述,图:[],备注}]
+/* v1.0.13：改用 lsArr —— 除校验外层是数组外，还逐元素剔除 null / 非对象。
+   原 v1.0.12 只校验外层，`[{...}, null]` 能过校验，随后 modelCard() 读
+   `.姓名` 即抛 TypeError → 白屏（实测复现）。 */
+let MODELS = lsArr(LS_MODEL);   // [{姓名,身高,体重,样图,备注,createdAt,updatedAt}]
+let VENUES = lsArr(LS_VENUE);   // [{id,名称,所在区,适配风格,时效性,门票,简述,图:[],备注}]
 let _venueSeq = VENUES.reduce((m,v)=>Math.max(m,+String(v.id).replace(/\D/g,'')||0),0);
 const saveModels = ()=>lsSet(LS_MODEL,JSON.stringify(MODELS));
 const saveVenues= ()=>lsSet(LS_VENUE,JSON.stringify(VENUES));
-/* v1.0.12：草稿读取也走 lsJSON + 对象结构校验。
-   原 try/catch 只能挡住「解析失败」，挡不住「解析成功但不是对象」
-   （例如存成数组/字符串/数字），那样 Object.assign(D, c) 会往状态对象里
-   灌进非法字段。加 guard 后，非普通对象一律视为损坏并重置。 */
+/* v1.0.13：草稿读取改用 lsDoc —— 逐节校验 + 缺失字段回落默认值。
+   v1.0.12 只校验「根是不是对象」，`{"s0":null}` 能通过校验并整份覆盖默认值，
+   导致 D.s0 === null，下一行 `D.s0.撰写日期` 立即抛错 → 白屏（实测复现）。
+   lsDoc 以默认结构 D 为模板逐节浅合并：某一节坏掉只丢那一节，其余照常恢复。 */
 try{
-  const c = lsJSON(LS, null, v => v && typeof v === 'object' && !Array.isArray(v), {keepOnBad:true});
-  if(c) D=Object.assign(D,c);
+  const c = lsDoc(LS, D, {keepOnBad:true});
+  if(c) D = c;
 }catch(e){}
 /* 全新开始（非恢复草稿）时，撰写日期默认今天 —— 编号的 YYYYMMDD 段依赖它。
    恢复草稿时不覆盖用户已填的日期。 */
