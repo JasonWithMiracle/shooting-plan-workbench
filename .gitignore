@@ -1,0 +1,39 @@
+# ============================================================
+# 拍摄策划工作台 — gitignore
+#
+# 约定（沿用 VoiceDesk 仓库标准）：一律锚定到根目录，禁止裸 `_*`。
+# 裸 `_*` 会静默吞掉子目录里以下划线开头的正常文件，且被吞的文件
+# 在 git status 里根本不出现 —— 属于静默失败，最难查。
+# ============================================================
+
+# --- 开发期临时抽取物（node --check 语法校验用）---
+/__chk*.js
+/_check.js
+
+# --- 旧版备份：保留在磁盘，不入库 ---
+*.bak
+
+# --- 抓取过程中的临时文本 ---
+/u2.txt
+/u3.txt
+/u4.txt
+/url.txt
+
+# --- CHANGELOG 合并过程中的中间产物（线上原文已推到远端，本地不留）---
+/_changelog_old.md
+/_changelog_new.md
+/_changelog_merged.md
+/_changelog_sha.txt
+
+# --- v1.0.12 排障期临时产物（线上原文已在远端 / 备份仅留磁盘）---
+/_changelog_online.md
+/_changelog_v112.md
+/_online_v111_dl.html
+/online.html.pre_v*
+
+# --- Python 缓存 ---
+__pycache__/
+*.pyc
+
+# --- 抓取响应正文（体积大、可随时重取）---
+/_push.json
