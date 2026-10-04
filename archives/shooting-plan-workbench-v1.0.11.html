@@ -1,0 +1,3704 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拍摄策划工作台 v1.0.11</title>
+<style>
+/* ============================================================
+   主题注册表 —— 新增主题只需往这里加一组 token 值
+   ============================================================ */
+:root{
+  --r:10px; --r2:7px; --r3:5px;
+  --ff:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --fm:ui-monospace,"SF Mono",Consolas,monospace;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+}
+html[data-theme="light"]{
+  --bg:#f4f6f8; --panel:#ffffff; --panel2:#f7f9fb; --border:#dde3ea;
+  --text:#1a1d23; --text2:#5b6472; --text3:#939cab;
+  --accent:#2f6fa8; --accent-bg:#e8f0f8;
+  --green:#2e8b57; --amber:#b87514; --red:#c43d3d; --purple:#7d5ba6; --teal:#17827d;
+  --req:#c43d3d; --ph:#eef1f5;
+}
+html[data-theme="dark"]{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
+  --text:#e8eaed; --text2:#9aa0ac; --text3:#6b7280;
+  --accent:#5b9dd9; --accent-bg:#1c2836;
+  --green:#5cb85c; --amber:#e0a458; --red:#e05c5c; --purple:#a67dd4; --teal:#4cbfb3;
+  --req:#e05c5c; --ph:#1a1e26;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff);background:var(--bg);color:var(--text);
+  font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+input,select,textarea,button{font-family:inherit;font-size:inherit;color:inherit}
+
+/* ============ 顶栏 ============ */
+.top{position:sticky;top:0;z-index:100;background:var(--panel);
+  border-bottom:1px solid var(--border);box-shadow:var(--sh)}
+.top-in{max-width:1560px;margin:0 auto;padding:12px 22px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:210px}
+.brand .logo{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
+  background:var(--accent-bg);color:var(--accent);font-size:16px;flex-shrink:0}
+.brand h1{font-size:15px;font-weight:600;letter-spacing:.3px}
+/* v1.9：版本号徽章。放标题右侧，与副行的「模板版本」是两回事——
+   APP_VER = 工具本身的版本（每次迭代变），模板版本 = T1-1 策划模板的版本（很少变）。
+   两者混在一行会让人误以为「模板 v3.0」就是工具版本，故拆开。 */
+.brand .vt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ver-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--fm);
+  font-size:10.5px;font-weight:700;letter-spacing:.4px;color:var(--accent);
+  background:var(--accent-bg);border:1px solid var(--accent);
+  border-radius:20px;padding:1px 8px;white-space:nowrap}
+.brand .sub{font-size:11px;color:var(--text3);margin-top:-2px}
+
+.prog{flex:1;min-width:220px;max-width:380px}
+.prog-hd{display:flex;justify-content:space-between;font-size:11px;
+  color:var(--text2);margin-bottom:5px}
+.prog-hd b{color:var(--accent);font-variant-numeric:tabular-nums}
+.bar{height:6px;background:var(--ph);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px;
+  transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+.tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--border);
+  border-radius:var(--r2);overflow:hidden}
+.seg button{background:transparent;border:none;padding:6px 12px;cursor:pointer;
+  font-size:12px;color:var(--text2);transition:.14s;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:none}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--accent);color:#fff;font-weight:500}
+html[data-theme="dark"] .seg button.on{color:#0f1115}
+.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text2);
+  padding:7px 13px;border-radius:var(--r2);cursor:pointer;font-size:12px;
+  transition:.14s;white-space:nowrap}
+.btn:hover:not(:disabled){color:var(--text);border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+html[data-theme="dark"] .btn.pri{color:#0f1115}
+.btn.pri:hover{opacity:.9}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:4px 9px;font-size:11px}
+
+/* ============ 存储容量指示（v1.1）============
+   放在顶栏末尾，宽度固定 74px，不挤动其他按钮。
+   常态只显示一条极细的进度线，hover 才展开数字——不打扰日常填写。 */
+.cap{width:74px;flex:0 0 74px;align-self:center;cursor:default;user-select:none}
+.cap-t{display:flex;justify-content:space-between;font-size:9.5px;
+  color:var(--text3);line-height:1.4;margin-bottom:2px;
+  font-variant-numeric:tabular-nums}
+.cap-b{height:3px;border-radius:2px;background:var(--panel2);overflow:hidden}
+.cap-f{height:100%;border-radius:2px;background:var(--accent);
+  transition:width .25s ease}
+.cap.warn .cap-t{color:var(--warn,#b8860f)}
+.cap.warn .cap-f{background:var(--warn,#b8860f)}
+.cap.full .cap-t{color:#c0392b;font-weight:500}
+.cap.full .cap-f{background:#c0392b}
+
+/* ============ 布局 ============ */
+.shell{max-width:1560px;margin:0 auto;display:grid;
+  grid-template-columns:212px 1fr;gap:0;align-items:start}
+.side{position:sticky;top:59px;padding:20px 12px 40px 22px;
+  max-height:calc(100vh - 59px);overflow-y:auto}
+.side-t{font-size:10px;color:var(--text3);text-transform:uppercase;
+  letter-spacing:1.2px;padding:0 8px 10px}
+.nav a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r2);
+  text-decoration:none;color:var(--text2);font-size:12.5px;transition:.14s;
+  border-left:2px solid transparent}
+.nav a:hover{background:var(--panel2);color:var(--text)}
+.nav a.on{background:var(--accent-bg);color:var(--accent);font-weight:500;
+  border-left-color:var(--accent)}
+.nav a .st{font-size:10px;margin-left:auto;font-variant-numeric:tabular-nums;
+  color:var(--text3);flex-shrink:0}
+.nav a.done .st{color:var(--green)}
+.nav a.part .st{color:var(--amber)}
+.nav .gap{height:1px;background:var(--border);margin:9px 8px}
+.nav .dim{opacity:.55}
+/* v1.7 两级导航：一级章节行 + 可折叠子节 */
+.navgrp{border-radius:var(--r2)}
+.navgrp.done>a .st{color:var(--green)}
+.navgrp.part>a .st{color:var(--amber)}
+.navrow{display:flex;align-items:stretch;position:relative}
+.navrow>a{flex:1;min-width:0}
+.caret{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  background:var(--panel2);border:1px solid var(--border);color:var(--text3);
+  width:20px;height:20px;border-radius:var(--r3);cursor:pointer;font-size:9px;
+  display:grid;place-items:center;transition:.16s;padding:0;line-height:1}
+.caret:hover{color:var(--accent);border-color:var(--accent)}
+.caret.open{transform:translateY(-50%) rotate(180deg)}
+.navrow>a:has(+ .caret){padding-right:30px}
+.navsubs{padding:2px 0 4px 12px;margin-left:9px;border-left:1px dashed var(--border)}
+.navsubs a{display:block;padding:4px 10px;font-size:11.5px;color:var(--text3);
+  border-left:none;border-radius:0 var(--r3) var(--r3) 0}
+.navsubs a:hover{background:var(--panel2);color:var(--text)}
+.navsubs a.on{color:var(--accent);background:var(--accent-bg);font-weight:500}
+.gapnote{font-size:10px;color:var(--text3);opacity:.72;padding:4px 10px;
+  margin:3px 0 6px;border-left:2px solid var(--border);line-height:1.5}
+/* 锚点跳转时不被吸顶条遮住 */
+[id^="anc-"]{scroll-margin-top:74px}
+
+.main{padding:20px 26px 90px;min-width:0}
+
+/* ============ 章节卡 ============ */
+.sec{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
+  padding:22px 24px;margin-bottom:18px;scroll-margin-top:74px}
+.sec-h{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.sec-h h2{font-size:15px;font-weight:600}
+.sec-n{font-family:var(--fm);font-size:11px;color:var(--text3);
+  background:var(--panel2);padding:2px 7px;border-radius:var(--r3)}
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;margin-left:auto;white-space:nowrap}
+/* v1.0.2：随「原型做实 / 占位」徽标一同移除 .b-req 与 .b-off
+   ——12 章节已全部做实，两者已成死代码。保留 .b-rec（含义强制项）。 */
+.b-rec{background:rgba(184,117,20,.12);color:var(--amber)}
+.sec-d{font-size:12px;color:var(--text3);margin-bottom:16px;
+  padding-bottom:14px;border-bottom:1px dashed var(--border)}
+h3{font-size:12px;font-weight:600;color:var(--text2);margin:20px 0 10px;
+  letter-spacing:.4px;display:flex;align-items:center;gap:7px}
+h3:first-of-type{margin-top:6px}
+h3::before{content:"";width:3px;height:12px;background:var(--accent);border-radius:2px}
+
+/* ============ 表单 ============ */
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+/* v1.5 补齐 .g5（此前从未定义，导致 §4 场地参考图与 §11 参考样片
+   虽写了 grid g5 却实际单列纵向堆叠，一屏看不全）。
+   图片类网格统一用 auto-fill + 最小列宽：容器变宽自动多排，变窄自动少排，
+   比固定 5 列更能「排布整齐」且不会溢出。 */
+.g5{grid-template-columns:repeat(5,1fr)}
+/* v1.8：固定一行 4 张（不再 auto-fill 自适应），保证网格整齐 */
+.gimg{grid-template-columns:repeat(4,1fr);gap:9px}
+@media(max-width:1100px){.g3,.g4,.g5{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}}
+
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f label{font-size:11.5px;color:var(--text2);display:flex;align-items:center;gap:5px}
+.req{color:var(--req);font-weight:700;font-size:13px;line-height:1}
+.rec{color:var(--amber);font-size:11px}
+.f input,.f select,.f textarea{background:var(--panel2);border:1px solid var(--border);
+  border-radius:var(--r2);padding:8px 11px;font-size:13px;width:100%;transition:.14s}
+.f textarea{resize:vertical;min-height:62px;line-height:1.65}
+.f input:focus,.f select:focus,.f textarea:focus{
+  outline:none;border-color:var(--accent);background:var(--panel)}
+.f input.err,.f textarea.err,.f select.err{border-color:var(--req);
+  background:rgba(196,61,61,.05)}
+.f .hint{font-size:10.5px;color:var(--text3)}
+.f .miss{font-size:10.5px;color:var(--req);display:flex;align-items:center;gap:3px}
+.f input::placeholder,.f textarea::placeholder{color:var(--text3);opacity:.7}
+
+/* ============ 表格 ============ */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r2);
+  margin-bottom:10px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:560px}
+th{background:var(--panel2);padding:8px 10px;font-size:11px;color:var(--text2);
+  font-weight:600;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:5px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(47,111,168,.035)}
+td input,td select{width:100%;background:transparent;border:1px solid transparent;
+  border-radius:var(--r3);padding:6px 8px;font-size:12.5px;transition:.14s}
+td input:hover,td select:hover{border-color:var(--border);background:var(--panel2)}
+td input:focus,td select:focus{outline:none;border-color:var(--accent);background:var(--panel)}
+td input.err{border-color:var(--req);background:rgba(196,61,61,.05)}
+th .req{vertical-align:middle}
+tr.dragging{opacity:.35}
+tr.over td{box-shadow:inset 0 2px 0 var(--accent)}
+.rowbtn{background:transparent;border:1px solid var(--border);color:var(--text3);
+  width:24px;height:24px;border-radius:var(--r3);cursor:pointer;font-size:12px;
+  display:grid;place-items:center;transition:.14s;flex-shrink:0}
+.rowbtn:hover{color:var(--req);border-color:var(--req)}
+.rowbtn.grip{cursor:grab;color:var(--text3);font-size:11px}
+.addrow{display:flex;gap:8px;margin-bottom:18px}
+
+/* ============ 图片槽 ============
+   v1.5 改造要点（对应第四批需求 2）：
+   1) 完整展示不裁切 —— 原 height:60px + object-fit:cover 会裁掉画面上下，
+      改为按宽高比自适应高度 + contain。
+   2) 排列整齐 —— 参考图是「排布用」而非终点（终点是导出 PDF/DOCX），
+      故槽位统一按 4:3 基准格渲染，同一槽内所有图尺寸一致、网格对齐，
+      不同宽高比的图也强制塞进同一比例的格子，视觉上整齐划一。
+   3) 删除按钮常驻 —— 原 .rm 只在 hover 时显示（opacity:0），
+      触屏与打印场景根本点不到；改为常驻半透明黑底白✕，hover 加深。 */
+.pick{width:100%;min-width:74px;aspect-ratio:4/3;border:1.5px dashed var(--border);
+  border-radius:var(--r2);background:var(--panel2);cursor:pointer;
+  display:grid;place-items:center;transition:.15s;overflow:hidden;position:relative}
+.pick:hover{border-color:var(--accent);background:var(--accent-bg)}
+.pick .ph{font-size:19px;color:var(--text3);line-height:1}
+.pick .lb{font-size:9px;color:var(--text3);margin-top:2px}
+.pick.filled{border-style:solid;border-color:var(--accent);padding:0}
+/* v1.8 修图片被裁：原用 width/height:100%，但 .pick 是 display:grid，
+   百分比高度在 grid 容器里解析失败会退化成 auto —— 极端比例的图
+   （如600×100）会撑到几百px 高被 overflow:hidden 切掉。
+   改为绝对定位铺满格子 + object-fit:contain，整张图完整可见（不足处留白）。 */
+.pick.filled img{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;display:block;background:var(--panel2)}
+/* 常驻删除按钮：不用 hover 触发，触屏/打印都能点 */
+.pick .rm{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.58);color:#fff;border:none;cursor:pointer;font-size:12px;
+  display:grid;place-items:center;opacity:1;transition:.15s;line-height:1;
+  font-weight:700;z-index:2}
+.pick .rm:hover{background:rgba(198,40,40,.94);transform:scale(1.12)}
+.pick.drop{border-color:var(--accent);background:var(--accent-bg);border-style:solid}
+
+/* v1.9：原 §6.6「汇总条」.genbar / .gb 样式随「生成总清单」按钮一并移除。
+   器材改为 6.5 只读聚合表，改完 6.1–6.4 即时反映，无需点按钮。
+   .genbar 名字保留在 @media print 的隐藏清单里也无害（无元素即无匹配）。 */
+
+/* ============ §0↔§1 / §0↔§4 同步摘要卡（v1.7）============ */
+.syncbox{border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:0 var(--r2) var(--r2) 0;background:var(--panel2);padding:10px 13px;margin-top:10px}
+.syncbox-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:7px}
+.syncbox-h .btn{margin-left:auto}
+.syncbox-b{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
+.syncbox-b .tag{font-size:10.5px;color:var(--text2);background:var(--panel);
+  border:1px solid var(--border);border-radius:20px;padding:1px 8px;white-space:nowrap}
+.syncbox-b .tag-warn{color:var(--amber);border-color:var(--amber);
+  background:rgba(184,117,20,.08)}
+.syncbox-n{font-size:11.5px;color:var(--text2);margin-top:6px;
+  padding-top:6px;border-top:1px dashed var(--border);line-height:1.6}
+
+/* ============ §7 行程甘特图（可拖拽 · v1.7）============ */
+/* 时间轴范围：早于最早事项 1 小时、晚于最晚结束 1 小时，两端对齐到整点，
+   保证刻度是整数小时；最小跨度6 小时，避免只有一项时被拉得过度稀疏。*/
+.gt{margin:10px 0 4px;border:1px solid var(--border);border-radius:var(--r2);
+  background:var(--panel);overflow:hidden;user-select:none}
+.gt-head{position:relative;height:60px;background:var(--panel2);
+  border-bottom:1px solid var(--border)}
+/* v1.0.11：轴高 42→60px，容纳节点标签错位后的第二行 */
+.gt-slotrow{position:absolute;left:0;right:0;top:30px;height:30px}
+.gt-slotrow .gt-slot{display:none}
+.gt-tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--border);
+  font-size:10px;color:var(--text3);font-family:var(--fm);padding-left:4px;
+  display:flex;align-items:center;pointer-events:none}
+.gt-tick.major{color:var(--text2);font-weight:600;border-left-color:var(--text3)}
+.gt-now{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--accent);
+  opacity:.55;pointer-events:none;z-index:3}
+.gt-now::after{content:'现在';position:absolute;top:2px;left:4px;font-size:9px;
+  color:var(--accent);white-space:nowrap}
+/* 关键节点（黄金时刻 / 日落…）：整列高亮的竖向标记 */
+.gt-slot{position:absolute;top:0;bottom:0;background:var(--c);opacity:.075;
+  pointer-events:none;z-index:0}
+.gt-slotlab{position:absolute;top:0;font-size:9.5px;color:var(--c);
+  font-weight:600;white-space:nowrap;z-index:4;opacity:.85;
+  background:transparent;border:none;cursor:pointer;padding:0 3px;border-radius:3px;
+  font-family:inherit;transition:.14s;line-height:16px}
+.gt-slotlab:hover{opacity:1;background:var(--panel);box-shadow:0 1px 4px rgba(0,0,0,.14)}
+/* v1.0.11：标签错位时用的引线，从轴顶拉到被挤下来的那一行 */
+.gt-slotlab-lead{position:absolute;top:0;width:0;border-left:1px dashed currentColor;
+  opacity:.45;z-index:3;pointer-events:none}
+.gt-slotlab-lead{color:var(--text3)}
+/* v1.9 需求4：与 8.2 联动的节点标签加重 + 「参考」角标（未联动时才显示） */
+.gt-slotlab.linked{font-weight:700;opacity:1}
+.gt-slotlab .ref{font-style:normal;font-size:8.5px;opacity:.7;margin-left:2px;
+  padding:0 2px;border:1px solid currentColor;border-radius:3px}
+.lnk-mark{font-size:9.5px;color:var(--accent);white-space:nowrap;flex-shrink:0;
+  padding:1px 4px;border:1px solid var(--accent);border-radius:3px;
+  background:var(--accent-bg);font-family:var(--fm)}
+tr.gt-linked td{background:var(--accent-bg)}
+tr.gt-linked .lnk-mark{font-weight:600}
+@keyframes rowflash{0%,100%{background:transparent}
+  15%,60%{background:color-mix(in srgb,var(--accent) 18%,transparent)}}
+tr.flash td{animation:rowflash 1.4s ease-out}
+/* 拖拽时的对齐参考线 */
+.gt-guide{position:absolute;top:60px;bottom:0;width:0;border-left:1px dashed var(--accent);
+  opacity:.5;pointer-events:none;z-index:8;display:none}
+.gt-rows{position:relative}
+.gt-row{position:relative;height:34px;border-bottom:1px dashed var(--border)}
+.gt-row:last-child{border-bottom:none}
+.gt-row:nth-child(even){background:rgba(127,127,127,.022)}
+.gt-rowlab{position:absolute;left:0;top:0;bottom:0;width:1px}
+.gt-bar{position:absolute;top:5px;height:24px;border-radius:5px;
+  background:var(--c);border:1.5px solid var(--c);color:#fff;
+  display:flex;align-items:center;padding:0 8px;font-size:11px;cursor:grab;
+  overflow:hidden;white-space:nowrap;transition:box-shadow .14s,filter .14s;
+  box-shadow:0 1px 3px rgba(0,0,0,.14);z-index:2}
+.gt-bar:hover{filter:brightness(1.08);box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.gt-bar.slim{padding:0 3px}
+.gt-bar.slim .gt-t,.gt-bar.slim .gt-d{display:none}
+.gt-bar.dragging{cursor:grabbing;box-shadow:0 8px 22px rgba(0,0,0,.3);
+  filter:brightness(1.12);z-index:9;opacity:.95}
+.gt-bar .gt-t{overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.gt-bar .gt-d{font-family:var(--fm);font-size:10px;opacity:.9;margin-left:auto;
+  padding-left:8px;pointer-events:none}
+/* 左右边缘的手柄：拖动改时长 */
+.gt-h{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:3}
+.gt-h::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:2px;height:11px;border-radius:1px;background:rgba(255,255,255,.75)}
+.gt-h.l{left:0} .gt-h.r{right:0}
+.gt-bar:hover .gt-h::after{background:#fff}
+/* v1.0.11：光影时刻（黄金/蓝调）手填覆盖区 */
+.solarbox{border:1px solid var(--border);border-left:3px solid #b8863f;
+  border-radius:0 var(--r2) var(--r2) 0;background:var(--panel2);
+  padding:11px 13px;margin:2px 0 10px}
+.solarbox-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  font-size:12.5px;margin-bottom:6px}
+.solarbox-h .tag{font-size:10.5px;color:var(--text2);background:var(--panel);
+  border:1px solid var(--border);border-radius:20px;padding:1px 8px}
+.solarbox-h .tag-warn{color:var(--amber);border-color:var(--amber);background:rgba(184,117,20,.08)}
+.solarbox-n{font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:9px}
+.solarbox-n a{color:var(--accent)}
+.solarbox-g{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.solarbox-g .f label{font-size:11.5px}
+.solarbox-g .f .hint{margin-top:2px}
+@media(max-width:900px){.solarbox-g{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.solarbox-g{grid-template-columns:1fr}}
+.gt-hint{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  font-size:10.5px;color:var(--text3);padding:6px 2px 0}
+.gt-hint kbd{font-family:var(--fm);font-size:9.5px;background:var(--panel2);
+  border:1px solid var(--border);border-radius:3px;padding:0 4px;color:var(--text2)}
+/* v1.0.11：光影时刻手填覆盖区属编辑期工具，打印件里隐藏。
+   与 .genbar 同理——策划案打出来给现场看，不需要让人回去填时刻。*/
+@media print{.solarbox{display:none!important}}
+
+/* 核对态 / 打印：甘特图无交互，只作为静态示意 */
+body[data-mode="check"] .gt-h{display:none}
+body[data-mode="check"] .gt-bar{cursor:default}
+
+/* 窄屏横向滚动 */
+@media(max-width:760px){.gt{overflow-x:auto}.gt-inner{min-width:560px}}
+/* 甘特图打印样式已统一收敛到文末的 @media print，此处不再重复定义 */
+
+/* ============ 复选 / 计算器 / 灯箱 ============ */
+.ck{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;
+  color:var(--text2);cursor:pointer;padding:5px 0;line-height:1.5}
+.ck input{width:auto;min-width:0;flex-shrink:0;margin-top:2px;cursor:pointer;
+  accent-color:var(--accent)}
+.calc{background:var(--accent-bg);border:1px solid var(--accent);border-radius:var(--r2);
+  padding:12px 14px;margin:10px 0}
+.calc .ct{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px}
+.calc .cf{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.calc .cf .f{flex:1;min-width:82px}
+.calc .cf input{background:var(--panel)}
+.calc .co{font-size:12.5px;margin-top:10px;padding-top:9px;
+  border-top:1px dashed var(--border);color:var(--text2)}
+.calc .co b{color:var(--accent);font-size:16px;font-variant-numeric:tabular-nums;
+  margin:0 3px}
+.calc .fx{font-family:var(--fm);font-size:10.5px;color:var(--text3);margin-top:5px}
+
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;
+  place-items:center;cursor:zoom-out;padding:26px}
+#lb.on{display:grid}
+#lb img{max-width:94vw;max-height:92vh;border-radius:var(--r2);
+  box-shadow:0 20px 70px rgba(0,0,0,.6)}
+
+/* 占位 */
+.ph-box{background:var(--ph);border:1px dashed var(--border);border-radius:var(--r2);
+  padding:22px;text-align:center;color:var(--text3);font-size:12.5px}
+.ph-box b{display:block;color:var(--text2);font-size:13px;margin-bottom:5px;font-weight:500}
+
+.note{font-size:11.5px;color:var(--text2);background:var(--panel2);
+  border-left:3px solid var(--accent);border-radius:0 var(--r2) var(--r2) 0;
+  padding:10px 13px;margin:12px 0}
+.warn{border-left-color:var(--amber)}
+.ok{color:var(--green)}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:none;
+  place-items:center;padding:26px}
+.modal.on{display:grid}
+.modal-c{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
+  max-width:540px;width:100%;padding:24px 26px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+  max-height:86vh;overflow-y:auto}
+.modal-c h3{margin:0 0 4px;font-size:15px}
+.modal-c h3::before{display:none}
+.miss-list{max-height:270px;overflow-y:auto;margin:14px 0;padding:11px;
+  background:var(--ph);border-radius:var(--r2);font-size:12.5px}
+.miss-list div{padding:3px 0;color:var(--text2)}
+.miss-list b{color:var(--req)}
+.modal-f{display:flex;gap:9px;justify-content:flex-end}
+
+/* 模式态 */
+body[data-mode="check"] .f input,body[data-mode="check"] .f select,
+body[data-mode="check"] .f textarea{
+  background:transparent;border-color:transparent;pointer-events:none}
+body[data-mode="check"] .f input:focus{outline:none}
+/* 核对态只隐藏「编辑类控件」：增删行按钮 + 纸张/导出按钮。
+   绝不能隐藏模式切换器 #modeSeg —— 否则进入核对态后无法切回编辑态
+   （这是Playwright 实测抓到的真bug）。*/
+body[data-mode="check"] .addrow,
+body[data-mode="check"] .rowbtn,
+body[data-mode="check"] .pick .rm,
+body[data-mode="check"] #paper,
+body[data-mode="check"] #pdfBtn,
+body[data-mode="check"] #docxBtn,
+body[data-mode="check"] #expBtn{display:none}
+/* 注：#impBtn（导入整案）在核对态**保留**——
+   核对往往正是「发现数据不对」的时刻，此时导入备份最有用。 */
+body[data-mode="check"] .ck input{pointer-events:auto}
+body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
+  font-size:10px;color:var(--amber);font-weight:400}
+
+/* ============ 打印 ============ */
+@media print{
+  html[data-theme="light"],html[data-theme="dark"]{
+    --bg:#fff;--panel:#fff;--panel2:#fff;--border:#bbb;--ph:#fff;
+    --text:#000;--text2:#333;--text3:#666;--accent:#000;--accent-bg:#fff
+  }
+  @page{size:A4 portrait;margin:14mm 12mm}
+  /* ---- v1.8：PDF 只呈现「策划安排本身」，一切注释/提示/操作痕迹全部剔除 ----
+     ① .hint 字段说明 ② .rec 推荐标签 ③ .note/.miss 提示块（.miss=「⚠强制项未填」）
+     ④ .req 强制项星号 ⑤ .badge 徽标 ⑥ .gt-hint 甘特图操作说明
+     ⑦ .genbar 汇总条（生成按钮是工具，不是内容）⑧ .calc .fx/.co 计算说明
+     ⑨ .cap 存储容量条（编辑期防护，与内容无关）⑩ .pick .lb/.ph/.rm 上传框文字与删除钮
+     ⑪ .sec-d 章节导语 ⑫ .gapnote 断档说明 ⑬ .syncbox-h 卡片内的操作按钮与脚注
+     ⑭ input::placeholder 全部不打印 —— PDF 只呈现策划安排的内容本身 */
+  .top,.side,.addrow,.rowbtn,.tools,.modal,#lb,.no-print,
+  .hint,.rec,.note,.miss,.req,.badge,.gt-hint,.genbar,.cap,
+  .calc .fx,.calc .co,.pick .lb,.pick .ph,.pick .rm,
+  .sec-d,.gapnote,.syncbox-h,.co,.lnk-mark,.gt-slotlab .ref{ display:none!important }
+  /* 计数类灰字（3/8、样图 0/2）同样是编辑期状态，不是策划内容 */
+  .f label span[style*="text3"]{display:none!important}
+  .shell{display:block;max-width:none}
+  .main{padding:0}
+  .sec{break-inside:avoid-page;page-break-inside:avoid;border:1px solid #ccc;
+    margin:0 0 10pt;padding:12pt;box-shadow:none;border-radius:0}
+  table{min-width:0;font-size:9pt}
+  th{background:#f0f0f0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  tr,td{break-inside:avoid}
+  /* 图片：完整显示整张、不裁切；一行 4 张与屏幕一致。
+     屏幕态图片是 position:absolute（配合 object-fit:contain 完整显示），
+     打印时必须改回 static 正常流 —— 绝对定位在分页/解除 aspect-ratio 后
+     会让格子高度塌成 0，图片被压成一条细线。 */
+  .pick{aspect-ratio:auto;height:auto;min-height:0}
+  .pick.filled{height:34mm;padding:0}
+  .pick.filled img{position:static;display:block;width:100%;height:100%;
+    max-height:34mm;object-fit:contain}
+  input,textarea,select{border:transparent!important;background:transparent!important;
+    padding:2px 0!important;font-size:9pt}
+  input::placeholder,textarea::placeholder{color:transparent!important}
+  .calc{background:#f6f6f6!important;border-color:#999;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .grid.gimg,.grid.g4{grid-template-columns:repeat(4,1fr)!important;
+    align-items:start}
+}
+</style>
+</head>
+<body data-mode="edit">
+
+<div class="top"><div class="top-in">
+  <div class="brand">
+    <div class="logo">📷</div>
+    <div>
+      <div class="vt">
+        <h1>拍摄策划工作台</h1>
+        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.11</span>
+      </div>
+      <div class="sub">T1-1 模板 v3.0 · 12 节（编号 0–11）</div>
+    </div>
+  </div>
+
+  <div class="prog">
+    <div class="prog-hd"><span>强制项完成度</span><b id="pTxt">0 / 32</b></div>
+    <div class="bar"><i id="pBar" style="width:0%"></i></div>
+  </div>
+
+  <div class="tools">
+    <div class="seg no-check" id="modeSeg">
+      <button class="on" data-m="edit">编辑</button>
+      <button data-m="preview">预览</button>
+      <button data-m="check">核对</button>
+    </div>
+    <select id="paper" class="btn no-check" style="padding:6px 9px">
+      <option value="A4 portrait">A4 纵向</option>
+      <option value="A4 landscape">A4 横向</option>
+    </select>
+    <button class="btn" id="tBtn" title="仅切换 token 值，组件样式不变">☀ 浅色</button>
+    <button class="btn pri" id="pdfBtn" title="打开浏览器打印对话框，选「另存为 PDF」即得 PDF">打印 / 存 PDF</button>
+    <button class="btn" id="docxBtn" title="尚未实现：需内联 docx 库（约 1.24 MB）。v1.1 补齐">导出 DOCX（未实现）</button>
+    <button class="btn" id="expBtn" title="把本策划案全部内容存成 .json 文件，可换设备导入恢复">⇩ 导出整案</button>
+    <button class="btn" id="impBtn" title="从 .json 文件恢复整份策划案，会覆盖当前数据">⇧ 导入整案</button>
+    <input type="file" id="impFile" accept="application/json,.json" hidden>
+    <div id="capBar" class="cap" title="浏览器本地存储占用。超出后新内容将无法保存，请先导出整案备份再删减图片"></div>
+  </div>
+</div></div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="side-t">章节导航</div>
+    <nav class="nav" id="nav"></nav>
+    <div style="padding:16px 8px 0">
+      <button class="btn sm" id="clrBtn" style="width:100%">清空全部数据</button>
+      <button class="btn sm" id="libBtn" disabled
+        style="width:100%;margin-top:6px;opacity:.5;cursor:not-allowed"
+        title="v2 预留接口：WorkBuddy 资料库同步">🔗 同步到资料库</button>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">
+        v2 预留 · 置灰
+      </div>
+    </div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div id="lb"><img alt=""></div>
+
+<div class="modal" id="modal"><div class="modal-c">
+  <h3>还有 <b id="mN">0</b> 个强制项未填</h3>
+  <div style="font-size:12px;color:var(--text3)">以下字段标🟥，建议补全后再导出：</div>
+  <div class="miss-list" id="mList"></div>
+  <div class="modal-f">
+    <button class="btn" id="mCancel">继续填写</button>
+    <button class="btn pri" id="mGo">仍然导出</button>
+  </div>
+</div></div>
+
+<script>
+/* ==========================================================================
+   0. 存储安全层（v1.0.12 新增）—— 全局唯一的 localStorage 读写入口
+   --------------------------------------------------------------------------
+   【为什么必须有这一层 —— 血泪教训，见 BC-20261005 白屏故障】
+   本工具是「单文件、零依赖、双击即用」，全部数据存在浏览器 localStorage。
+   而本脚本是一整段顶层 <script>：**任何一处顶层抛错，整段脚本终止**，
+   表现为「顶栏按钮还在（HTML 静态内容），但导航为空、主体全白」，
+   用户完全不知道发生了什么。
+
+   历史缺陷：曾有三处裸 `JSON.parse(localStorage.getItem(k))` 无任何防护：
+     - sw_usedno   编号流水
+     - sw_models   模特库
+     - sw_venues   场地库
+   只要这三个键之一：
+     ① 存过非法 JSON（异常退出写半个 / 手改 / 扩展污染 / 旧版残留），或
+     ② localStorage 本身不可用（隐私模式 / 站点策略禁用 / file:// 受限）
+   就会在第一行抛错 → 整页白屏。实测：本地 file:// 与线上 GitHub Pages 同样中招。
+
+   本层对策：**读取永不抛错**。三种失败全部兜底为默认值，并把脏数据
+   备份到 `<key>__broken` 后清掉，让用户下次打开自动恢复正常。
+   另加 window.__booted 哨兵，供 §0.1 白屏兜底判断首绘是否真的跑完。
+   ========================================================================== */
+const LS_NS = {
+  /* 是否可用：试探性写入再删除，隐私模式/禁用会抛错 */
+  ok: (function(){
+    try {
+      const t = '__ls_probe__';
+      localStorage.setItem(t, '1');
+      localStorage.removeItem(t);
+      return true;
+    } catch (e) { return false; }
+  })()
+};
+
+/* 原始读取：任何异常都返回 null，绝不外抛 */
+function lsRaw(key){
+  try { return localStorage.getItem(key); }
+  catch (e) { return null; }
+}
+
+/* 安全写入：任何异常都静默失败（例如配额满），返回是否成功 */
+function lsSet(key, val){
+  try { localStorage.setItem(key, val); return true; }
+  catch (e) { return false; }
+}
+
+/* 安全读取 + JSON 解析 + 结构校验。
+   - fallback：解析失败或结构不符时的默认值（会被深拷贝一份返回）
+   - guard：可选的结构校验函数，返回 false 视为数据损坏
+   命中损坏时：把原值备份到 `${key}__broken`（最多留一份），再删除主键，
+   使下一次启动回到干净状态。 */
+function lsJSON(key, fallback, guard){
+  const clone = v => { try { return JSON.parse(JSON.stringify(v)); } catch(e){ return v; } };
+  const bad = (why) => {
+    const old = lsRaw(key);
+    if (old !== null) {
+      lsSet(key + '__broken', old);   // 留证，便于事后排查
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+    if (window.console && console.warn) {
+      console.warn('[safeLS] 键 "' + key + '" 数据损坏已重置 → ' + why);
+    }
+    return clone(fallback);
+  };
+  if (!LS_NS.ok) return clone(fallback);      // 存储不可用 → 直接给默认值
+  const s = lsRaw(key);
+  if (s === null || s === '') return clone(fallback);
+  let v;
+  try { v = JSON.parse(s); }
+  catch (e) { return bad('JSON 解析失败：' + (e && e.message || e)); }
+  if (guard && !guard(v)) return bad('结构校验未通过');
+  return v;
+}
+
+/* 布尔 / 字符串等简单值的安全读写 */
+function lsStr(key, fallback){
+  const s = lsRaw(key);
+  return (s === null) ? (fallback === undefined ? null : fallback) : s;
+}
+
+/* 供电调试：一键清空本工具的全部键（含损坏备份），恢复出厂 */
+function lsPurgeAll(){
+  const keys = ['sw_doc_v01','sw_usedno','sw_models','sw_venues','sw_solar_override',
+                'sw_app_ver','sw_usedno__broken','sw_models__broken','sw_venues__broken'];
+  keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+}
+
+/* ---- 首屏兜底哨兵（§0.1 用）----
+   首绘成功时置 true；若 DOMContentLoaded 后一段时间仍未置位，
+   说明脚本某处提前终止，此时展示可读的故障提示（而不是白屏）。 */
+window.__booted = false;
+
+/* ==========================================================================
+   1. 主题注册表 —— 新增主题只加一组 token，不动组件 CSS
+   ========================================================================== */
+const THEMES = { light:{}, dark:{} };
+const THEME_NAMES = { light:'☀ 浅色', dark:'☾ 暗色' };
+
+/* ==========================================================================
+   2. 编号中枢 ——策划案编号（只读·自动生成）
+   --------------------------------------------------------------------------
+   编号规则：CX-YYYYMMDD-XX
+     CX        固定前缀（Photography Studio）
+     YYYYMMDD  撰写日期（回退：拍摄日期 → 今天）
+     XX        同一天内的流水号，从 01 开始
+     例：CX-20260505-01 = 2026年5月5日制作的第一份策划案
+   ─────────────────────────────────────────────────────────────────────────
+   编号即主键：导出目录名、文件名、台账行、data.json 全用它，保证可追溯。
+   已用流水号存localStorage('sw_usedno')，键为 'CX-YYYYMMDD' → 已分配的最大序号。
+   M4 入库时由资料库二次校验并回写，避免多人离线撞号。
+   ========================================================================== */
+const AUTO_NO = {
+  prefix: 'CX',
+  /* v1.0.12：改走 lsJSON，脏数据/存储不可用一律回退空对象，
+     绝不再因单个键损坏而中断整段脚本（原为裸 JSON.parse，白屏元凶之一） */
+  used: lsJSON('sw_usedno', {}, v => v && typeof v === 'object' && !Array.isArray(v)),
+  key(d){ return this.prefix+'-'+(d||'').replace(/-/g,''); },
+  /* 生成下一个可用编号；baseDate 为空则用今天 */
+  next(baseDate){
+    const d = baseDate || new Date().toISOString().slice(0,10);
+    const k = this.key(d), n = (this.used[k] || 0) + 1;
+    return { no: k+'-'+String(n).padStart(2,'0'), key: k, seq: n };
+  },
+  reserve(k, seq){
+    this.used[k] = Math.max(this.used[k]||0, seq);
+    localStorage.setItem('sw_usedno', JSON.stringify(this.used));
+  },
+  release(k, seq){
+    /* 只回退「当前最大且为末位」的情况，避免撞号 */
+    if(this.used[k]===seq){ delete this.used[k];
+      localStorage.setItem('sw_usedno', JSON.stringify(this.used)); }
+  },
+  preview(baseDate){
+    const x = this.next(baseDate);
+    return '下一个可用：' + x.no + '（' + x.key + ' 当日已用 '
+      + (this.used[x.key]||0) + ' 份）';
+  }
+};
+const LS='sw_doc_v01';
+const REQ = v => !String(v??'').trim();
+
+/* ==========================================================================
+   存储容量防护（v1.1 新增）
+   --------------------------------------------------------------------------
+   为什么需要：localStorage 是**整个 origin 共享 4 MB**（实测，非每键 4 MB），
+   而图片压到 1600px/q0.85 后单张仍可达 1.1 MB。§4 场地参考图 10 张 +
+   §11 样片 25 张，理论上远超配额。
+
+   setItem 的真实语义（实测，非推测）：**all-or-nothing**——
+   超配额时抛 QuotaExceededError，但**上一次成功写入的内容完好无损**。
+   所以危险的不是「数据全丢」，而是：
+     界面照常显示新内容 → 实际一个字节都没存进去 → 刷新后凭空消失，
+     且全程无任何提示。用户根本不知道从哪一刻起存的是假的。
+   因此必须在 save() 内部统一拦截（29 个调用点，逐个改不可靠）。
+   ========================================================================== */
+const CAP_WARN = 0.75;   /* 占用达 75% 起黄条，90% 起红条并禁用继续加图 */
+const CAP_BLOCK= 0.90;
+/* 探底真实配额：二分不划算（每次探测都要写 MB 级数据），
+   实测 Chromium file:// 与 http:// 均为 4 MB，故直接取保守值。 */
+const CAP_TOTAL = 4 * 1024 * 1024;
+
+let _capLocked = false;   /* 已因超限锁定，避免每次输入都弹窗刷屏 */
+
+/* 统计当前文档里所有 data: 图片的累计体积（精确到字节，遍历代价可接受） */
+function imgBytes(){
+  let n = 0, total = 0;
+  (function walk(x){
+    if (typeof x === 'string'){ if (x.startsWith('data:')){ n++; total += x.length; } return; }
+    if (Array.isArray(x)){ x.forEach(walk); return; }
+    if (x && typeof x === 'object'){ for (const k in x) walk(x[k]); }
+  })(D);
+  return { n, total };
+}
+/* 占用率 = 本文档实际字节 / 配额。返回 {used, total, ratio, imgN} */
+function storageStat(){
+  let used = 0;
+  try{ used = (localStorage.getItem(LS) || '').length; }catch(e){}
+  const im = imgBytes();
+  return { used, total: CAP_TOTAL, ratio: used / CAP_TOTAL, imgN: im.n };
+}
+const kb = n => (n / 1024).toFixed(0);
+
+/* 核心：所有写入都从这里过。返回 true=存成功，false=未存（已告警） */
+function save(){
+  const json = JSON.stringify(D);
+  try{
+    localStorage.setItem(LS, json);
+  }catch(err){
+    /* 关键：此时磁盘上仍是上一次成功的内容，D 里的新数据**从未落库**。
+       必须明确告知，且不能只提示一次——用户可能几分钟后才刷新页面。 */
+    if (!_capLocked){
+      _capLocked = true;
+      const im = imgBytes();
+      toast('⚠️ 存储已满，本次修改未保存\n\n'
+        +'当前占用 ' + kb(json.length) + ' KB / 上限 ' + kb(CAP_TOTAL) + ' KB\n'
+        +'图片 ' + im.n + ' 张，占 ' + kb(im.total) + ' KB（占 ' 
+        + Math.round(im.total / json.length * 100) + '%）\n\n'
+        +'你屏幕上看到的新内容**尚未写入**，刷新会丢失。\n'
+        +'请立即「导出整案」备份，然后删掉部分参考图 / 样片再继续。');
+    }
+    if (window.__capBar) window.__capBar();
+    return false;
+  }
+  _capLocked = false;
+  if (window.__capBar) window.__capBar();
+  return true;
+}
+
+let D = {
+  meta:{ id:'', theme:'light', mode:'edit' },
+  s0:{ 编号:'', 编号规则:'CX-YYYYMMDD-XX', 版本:'v1.0',
+       撰写日期:'', 拍摄日期:'', 时段:'', 地点:'', 场地所在区:'', 拍摄主题:'',
+       题材类型:'', 性质:'', 收入:'', 成片类型:'', 模特:'', 负责摄影师:'' },
+  /* §2 服装：上身/下身/鞋袜三表融合为单一「服装」表——旗袍、连衣裙等连体服饰无法拆分 */
+  s2:{ 服装:[{类:'',品:'',款:'',质:'',色:'',图:''}],
+       配饰:[[{类:'帽子',具:'',必:false,图:''}]] },
+  s3:{ 妆:{风:'',腮:'',口:'',眼:'',睫:'',禁:'',图:''},
+       发:{效:'',意:'',图:''} },
+  /* §1 模特档案（模特库一行 = 一位模特） */
+  s1:{ 姓名:'', 身高:'', 体重:'', 样图:[], 备注:'', _new:true },
+  /* §4 场地档案（场地库一行 = 一处场地） */
+  s4:{ 场地Id:'', 名称:'', 所在区:'', 适配风格:'', 时效性:'否',
+       门票:'', 简述:'', 图:[], 备注:'' },
+  /* §7 布光：默认只留「主光」一行，需手动加行；灯位与光线方向均为单选 */
+  s7:{ 方案:'严谨',
+      灯位:[[{灯位名:'主光',方向:'',具:'',数:'',瓦:'',电:'',控:'',控数:'',用:''}]],
+        图:'', 场景:'', 渲染器:'', 渲染图例:'', 渲染视角:'', 摆放:'', 底色:'',
+        总功率:'', 供电:'', 直射:'', _pwAuto:true },
+  s10:{ 风:[['下雨','大风','场地人流过大','模特迟到/缺席','设备故障','内存不足',
+             '妆造失败','天气突变（暴雨/台风）']
+            .map(n=>({险:n,触:'',备:''}))],
+        人:'', 时:'' },
+  /* §5 道具清单（行数组，可增删）+ 道具参考图（v1.5 做实） */
+  s5:{ 道具:[{名:'', 类:'拍摄道具', 数:'1', 备:''}], 图:[] },
+  /* §6 摄影器材（v1.5 全部做实：6.1 器材 / 6.2 滤镜 / 6.3 灯光 / 6.4 附件）
+     注意：6.3 灯光只登记「带了什么灯」，布光怎么摆由 §7 负责，两者不重复。
+     v1.9：原「总清单 / 卡 / 算式」三字段连同 6.6 整节一并删除——器材只在
+     6.1–6.4 维护一份，6.5 由 gearSummary() 实时聚合出只读总表，不再手工
+     维护第二份（避免两处数据打架）。存储卡容量估算移入 Roadmap。 */
+  s6:{ 器材:[{品:'', 型:'', 数:'1', 备:''}],
+       滤镜:[{品:'', 型:'', 备:''}],
+       灯:[{品:'', 型:'', 数:'1', 备:''}],
+       附件:[{品:'', 型:'', 数:'1', 备:''}] },
+  /* §11 参考样片（v1.6 做实，取代原 §8 后期需求）：5-25 张。
+     v1.6：原 11.2「样片出处 / 借鉴点 / 后期与交付口径」整节删除，
+     对应「11.出处」「11.借鉴」两个必填项一并从 reqAll/doneSet 移除。
+     §11 现在只做一件事：传样片、删错图。 */
+  s11:{ 样片:[] }
+};
+/* §8 行程安排（v1.6 做实）：timetable 行数组
+   默认给 4 行常见节点，用户可增删；只做时间管理，不含人员分工。 */
+D.s8={ 行:[
+  {时:'08:30', 事:'妆造与换装', 地:'', 耗时:90, 备:'按 §3 参考图定妆'},
+  {时:'10:30', 事:'布光与测光',   地:'', 耗时:60, 备:'按 §7 布光方案落地'},
+  {时:'12:00', 事:'正片拍摄',     地:'', 耗时:180,备:'对齐 §11 参考样片'},
+  {时:'16:30', 事:'黄金时刻拍摄', 地:'', 耗时:60, 备:'逆光 / 剪影'} ] };
+/* §11 参考样片数量上下限。
+   ⚠️ 必须定义在 reqAll()/doneSet() **之前**——这两个函数在函数体内引用本常量，
+   而 const 有暂时性死区（TDZ）：若定义在文件后部，页面加载时 reqAll()
+   一执行就抛 ReferenceError，整个工作台白屏。 */
+const S11_MIN=5, S11_MAX=25;
+/* ==========================================================================
+   §8.1 甘特时段轴的关键节点
+   --------------------------------------------------------------------------
+   v1.0.11 变更（用户需求：每天黄金/蓝调时刻都不同，上午和下午各有一组，
+   拍摄时段选上午就显示上午那组，下午/晚上就显示下午那组）：
+
+   此前这里写死一组全年通用值（全站只有「黄金时刻 16:30」+「日落 18:30」，
+   蓝调仅是日落节点 tip 里的一句文案），而 §0.2 的 PERIODS 下拉
+   （上午/下午/晚上）压根没有任何代码消费它——填了也不影响甘特图。
+
+   现在改成三件事：
+     ① SOLAR 表：广州（23.13°N/113.26°E）按 12 个月分档的日出/日落/
+        上午黄金/上午蓝调/下午黄金/下午蓝调。每月取 15 日为该月代表值。
+        由 solar_gen.py 用 NOAA 简化太阳位置算法算出，口径与
+        miniwebtool 黄金蓝调计算器一致：
+           日出日落= 高度角 -0.833°（含大气折射 + 太阳圆盘半径）
+           黄金时刻  = 高度角 +6° ~ -4°
+           蓝调时刻  = 高度角 -4° ~ -6°（民用晨昏蒙影下段）
+        实测广州全年日长10.7~13.6 小时，6 月最长、1 月最短，符合预期。
+        ⚠️ 若拍摄地不是广州，务必在下方「光影时刻」区按当地数据手填覆盖。
+     ② slotSet()：按 D.s0.时段 取对应那组。时段未选时默认用下午档
+        （多数人下午拍，且下午那组信息量最大）。
+     ③ 覆盖优先：用户在 §8.1「光影时刻」区手填的值 > 内置表。
+   --------------------------------------------------------------------------
+   节点顺序：上午黄金 → 上午蓝调 →（白天）→ 下午黄金 → 下午蓝调。
+   蓝调从「日落的 tip 文案」升为独立节点—— 摄影上它是独立的拍摄窗口，
+   需要单独的曝光参数（三脚架 + 长曝），不该藏在别的节点说明里。 */
+const SOLAR={
+  1:{sr:'06:52',ss:'17:44',amG:['06:37','07:25'],amB:['06:28','06:37'],pmG:['17:11','17:59'],pmB:['17:59','18:08']},
+  2:{sr:'06:31',ss:'17:54',amG:['06:17','07:02'],amB:['06:08','06:17'],pmG:['17:23','18:08'],pmB:['18:08','18:17']},
+  3:{sr:'06:18',ss:'18:17',amG:['06:04','06:47'],amB:['05:55','06:04'],pmG:['17:47','18:31'],pmB:['18:31','18:40']},
+  4:{sr:'06:06',ss:'18:47',amG:['05:52','06:37'],amB:['05:44','05:52'],pmG:['18:17','19:01'],pmB:['19:01','19:10']},
+  5:{sr:'05:54',ss:'19:08',amG:['05:39','06:25'],amB:['05:29','05:39'],pmG:['18:37','19:23'],pmB:['19:23','19:32']},
+  6:{sr:'05:40',ss:'19:13',amG:['05:25','06:13'],amB:['05:15','05:25'],pmG:['18:41','19:29'],pmB:['19:29','19:39']},
+  7:{sr:'05:38',ss:'19:04',amG:['05:23','06:10'],amB:['05:13','05:23'],pmG:['18:32','19:19'],pmB:['19:19','19:29']},
+  8:{sr:'05:54',ss:'18:51',amG:['05:39','06:24'],amB:['05:30','05:39'],pmG:['18:20','19:05'],pmB:['19:05','19:14']},
+  9:{sr:'06:23',ss:'18:41',amG:['06:09','06:53'],amB:['06:00','06:09'],pmG:['18:11','18:55'],pmB:['18:55','19:03']},
+ 10:{sr:'06:52',ss:'18:31',amG:['06:38','07:22'],amB:['06:30','06:38'],pmG:['18:00','18:45'],pmB:['18:45','18:53']},
+ 11:{sr:'07:11',ss:'18:13',amG:['06:56','07:43'],amB:['06:47','06:56'],pmG:['17:41','18:28'],pmB:['18:28','18:37']},
+ 12:{sr:'07:10',ss:'17:53',amG:['06:55','07:43'],amB:['06:45','06:55'],pmG:['17:20','18:08'],pmB:['18:08','18:18']}
+};
+/* 手填覆盖的存储键（localStorage，不进 D——它是「工具侧的参考数据」，
+   不是策划案内容，不该跟着整案导出/导入走） */
+const LS_SOLAR_OVR='sw_solar_override';
+let SOLAR_OVR={};
+try{ SOLAR_OVR=JSON.parse(localStorage.getItem(LS_SOLAR_OVR)||'{}')||{}; }catch(e){ SOLAR_OVR={}; }
+/* 覆盖值结构：{amG:['06:40','07:30'],amB:[...],pmG:[...],pmB:[...],sr:'',ss:''}
+   支持只填其中几项，未填的项回落到内置表。 */
+function solarOverride(){
+  return SOLAR_OVR[shotMonth()]||null;
+}
+function shotMonth(){
+  const d=String(D.s0.拍摄日期||'').match(/(\d{4})-(\d{2})/);
+  return d? +d[2] : new Date().getMonth()+1;
+}
+function solarFor(m){
+  return SOLAR[m]||SOLAR[1];
+}
+function saveSolarOverride(){
+  try{ localStorage.setItem(LS_SOLAR_OVR,JSON.stringify(SOLAR_OVR)); }catch(e){}
+}
+/* 时段 → 取上午档还是下午档。用户拍板：「选上午显示上午那组，
+   选下午、晚上都显示下午那组」（晚上没有太阳，自然取下午那组）。 */
+function solarHalf(){
+  return String(D.s0.时段||'').trim()==='上午' ? 'am' : 'pm';
+}
+/* 取出某档的四个时刻，已合并手填覆盖 */
+function solarTimes(){
+  const m=shotMonth(), base=solarFor(m), ov=solarOverride(), half=solarHalf();
+  const pick=k=> (ov&&Array.isArray(ov[k])&&ov[k][0]) ? ov[k] : base[k];
+  return { sr: (ov&&ov.sr)||base.sr, ss: (ov&&ov.ss)||base.ss,
+           amG:pick('amG'), amB:pick('amB'), pmG:pick('pmG'), pmB:pick('pmB'), half, month:m };
+}
+/* slotSet()（原 S8_SLOTS 常量）改函数生成：前三个（妆造/布光/拍摄）与收工是**流程节点**，
+   保持原样；四个光影节点按时段与月份动态取时刻。 */
+function slotSet(){
+  const T=solarTimes();
+  const am=T.half==='am';
+  return[
+    {k:'妆造',  t:'08:30',seg:'prep',  c:'#7d8a76',
+     tip:'化妆 / 换装 / 妆面参考图确认'},
+    {k:'布光',  t:'10:00',seg:'setup', c:'#8a8467',
+     tip:'架灯、测光、确认 §7 布光方案落地'},
+    {k:'拍摄',  t:'12:00',seg:'shoot', c:'#8a7b68',
+     tip:'正片拍摄，按 §11 参考样片对齐风格'},
+    {k:am?'上午黄金时刻':'下午黄金时刻', t:am?T.amG[0]:T.pmG[0], seg:'golden', c:'#b8863f',
+     tip:'★ 黄金时刻（太阳高度角 +6°~-4°）：低角度暖光，'
+        +'色温约 3000-4000K，逆光/剪影/轮廓光最佳时段'
+        +'\n本组为广州 ' + T.month + ' 月参考值（持续到 ' + (am?T.amG[1]:T.pmG[1]) + '）'},
+    {k:am?'上午蓝调时刻':'下午蓝调时刻', t:am?T.amB[0]:T.pmB[0], seg:'sunset', c:'#a05a4a',
+     tip:'★ 蓝调时刻（太阳高度角 -4°~-6°，民用晨昏蒙影）：冷调天空，'
+        +'需三脚架 + 长曝，人工灯光与天光亮度接近'
+        +'\n本组为广州 ' + T.month + ' 月参考值（持续到 ' + (am?T.amB[1]:T.pmB[1]) + '）'},
+    {k:'收工',  t:'19:30', seg:'wrap',  c:'#6f7d8a',
+     tip:'归还场地物品、向管理员致谢'}
+  ];
+}
+/* 手填覆盖表单：填了就用用户的，没填回落内置表。 */
+function solarOvrHtml(){
+  const T=solarTimes(), m=shotMonth(), base=solarFor(m);
+  const ov=solarOverride()||{};
+  const halfTxt=T.half==='am' ? '上午档' : '下午档（时段选了下午或晚上）';
+  const f=(key,label,baseVal,ph)=>{
+    const v=(ov&&Array.isArray(ov[key])&&ov[key][0])?ov[key][0]:'';
+    return `<div class="f" style="margin:0">
+      <label>${label}</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="time" data-solar="${key}0" value="${esc(v)}" style="flex:1"
+          placeholder="${esc(baseVal[0])}" title="内置参考 ${baseVal[0]}-${baseVal[1]}">
+        <span style="color:var(--text3);font-size:12px">→</span>
+        <input type="time" data-solar="${key}1" value="${esc(ov[key]?ov[key][1]:'')}"
+          placeholder="${esc(baseVal[1])}" title="内置参考 ${baseVal[0]}-${baseVal[1]}">
+      </div>
+      <div class="hint" style="font-size:10.5px">内置：${esc(baseVal[0])}–${esc(baseVal[1])}</div>
+    </div>`;
+  };
+  return `<div class="solarbox">
+    <div class="solarbox-h">
+      <b>光影时刻（黄金 / 蓝调）</b>
+      <span class="tag" style="font-size:10.5px">${esc(halfTxt)} · 广州 ${m} 月</span>
+      <span style="font-size:10.5px;color:var(--text3)">
+        日出 ${esc(T.sr)} · 日落 ${esc(T.ss)}</span>
+      ${Object.keys(ov).length?'<span class="tag tag-warn" style="font-size:10.5px">已手填覆盖</span>':''}
+    </div>
+    <div class="solarbox-n">
+      按<b>太阳高度角</b>算：黄金 +6°~-4°、蓝调 -4°~-6°，与
+      <a href="https://miniwebtool.com/zh-cn/%E9%BB%84%E9%87%91%E6%97%B6%E5%88%BB%E5%92%8C%E8%93%9D%E8%B0%83%E6%97%B6%E5%88%BB%E8%AE%A1%E7%AE%97%E5%99%A8/"
+         target="_blank" rel="noopener">黄金蓝调计算器</a>同口径。
+      <b>换城市请按当地数据手填覆盖</b>（内置表是广州值，纬度差得多时偏差明显）。
+    </div>
+    <div class="solarbox-g">
+      ${f('amG','上午黄金时刻',base.amG,'')}
+      ${f('amB','上午蓝调时刻',base.amB,'')}
+      ${f('pmG','下午黄金时刻',base.pmG,'')}
+      ${f('pmB','下午蓝调时刻',base.pmB,'')}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <button class="btn sm" data-solar-apply>应用到甘特图</button>
+      <button class="btn sm ghost" data-solar-clear>清除手填，回落内置表</button>
+      <span style="font-size:10.5px;color:var(--text3)">
+        切换 §0.2 的「拍摄时段」会改变甘特图取哪一组</span>
+    </div>
+  </div>`;
+}
+/* ---- 模特库 / 场地库（v1 存localStorage；CSV 与飞书接口见 04 调研报告）---- */
+/* ==========================================================================
+   版本号：单一事实源。规则为 1.0.x（v1.0.9），不再用 v1.7/v1.8/v1.9 那套编号——
+   那是从 v1.1.0（线上首个发布版）之后另起的一条开发线，两套号并行会让
+   「线上是几版」永远说不清。1.0.x 与 v1.1.0 属同一条主线的不同段落。
+   --------------------------------------------------------------------------
+   APP_VER —— 工具本身的版本，每次功能迭代 +1。
+              左上角徽章、导出文件名、Roadmap 三处都读它，改版只改这一行。
+   TPL_VER —— 策划模板的版本（T1-1），只有模板本身改结构时才动它，与 APP_VER 无关。
+   ⚠️ 曾经把两者混在一行写成「T1-1 模板 v3.0 · 13 节 · 原型 v0.1」，
+      结果「原型 v0.1」被当成工具版本 —— 用户测试的线上版其实早已迭代过多轮，
+      页面却还写着 v0.1，版本对不上。这是版本标注必须独立成徽章的原因。
+   ========================================================================== */
+const APP_VER='v1.0.11', TPL_VER='v3.0';
+const LS_MODEL='sw_models', LS_VENUE='sw_venues';
+/* v1.0.12：均改走 lsJSON + 数组结构校验。
+   原为裸 JSON.parse(localStorage.getItem(...))，是该键被污染时白屏的直接原因。
+   数据被污染时自动备份到 sw_models__broken / sw_venues__broken 并重置为空数组，
+   用户下次打开即恢复正常（损失的是已被写坏的那份缓存数据，无法挽回）；
+   不再连带整页瘫痪 —— 这是本次修复的核心。 */
+const isModelArr  = v => Array.isArray(v);
+const isVenueArr  = v => Array.isArray(v);
+let MODELS = lsJSON(LS_MODEL, [], isModelArr);   // [{姓名,身高,体重,样图,备注,createdAt,updatedAt}]
+let VENUES = lsJSON(LS_VENUE, [], isVenueArr);   // [{id,名称,所在区,适配风格,时效性,门票,简述,图:[],备注}]
+let _venueSeq = VENUES.reduce((m,v)=>Math.max(m,+String(v.id).replace(/\D/g,'')||0),0);
+const saveModels = ()=>lsSet(LS_MODEL,JSON.stringify(MODELS));
+const saveVenues= ()=>lsSet(LS_VENUE,JSON.stringify(VENUES));
+try{ const c=JSON.parse(localStorage.getItem(LS)||'null'); if(c) D=Object.assign(D,c); }catch(e){}
+/* 全新开始（非恢复草稿）时，撰写日期默认今天 —— 编号的 YYYYMMDD 段依赖它。
+   恢复草稿时不覆盖用户已填的日期。 */
+if(!D.s0.撰写日期) D.s0.撰写日期 = new Date().toISOString().slice(0,10);
+
+const ASSETS = {};   // id -> {hash,mime,w,h,size,uploadedAt}
+let _seq = 1;
+
+/* ==========================================================================
+   3. 章节定义
+   ========================================================================== */
+/* 章节表（v1.7 建立，v1.9 随章节重排同步）：与render() 的实际输出**逐项对齐**。
+   v1.7 变更（对应需求「左侧导航栏要根据工作台内的实际项目进行更新，
+   工作台内的需要部分出现断档，也要更新」）：
+     1. subs 字段—— 每个章节挂上真实存在的子节锚点，导航支持两级下钻，
+        点导航直接落到 6.5 / 7.2 这一级，而不是只到节。
+     2. 补上 §7.4 与 §6.5 的锚点（原 §6 只有 6.1–6.4，6.5 无处可跳= 断档）。
+     3. §8「后期需求」的坑位说明：v1.6 已并入 §11，故不再单列，
+        以gap 标注「已并入 §11」，避免看的人以为漏了。
+     4. §12「交付与确认」v1.6 整节删除（导出后的人工动作），同样以gap 说明。
+   v1.9 变更（章节重排：原 6.5 布光 → §7，原 6.6 总单整节删除 → §8 顺延为行程）：
+     · 原 §6.6「器材总清单与存储卡算式」整节删除，改为 6.5 只读聚合总表；
+       断档说明从 after7 迁到 after6（挂在 §6 之后，编号才是对的）。
+   编号保留 T1-1 模板原样（含7 布光插在 6 与 7 之间），
+   那是模板的历史编号，不是错误。 */
+const SECS = [
+ {id:'0',  t:'0. 基本信息',  req:true,
+  subs:[['0-1','0.1 立项标识'],['0-2','0.2 拍摄时间'],['0-3','0.3 拍摄地点'],
+        ['0-4','0.4 拍摄主题'],['0-5','0.5 策划案分类'],
+        ['0-6','0.6 性质与收入'],['0-7','0.7 模特档案摘要']]},
+ {id:'1',  t:'1. 模特',      req:true,
+  subs:[['1-1','1.1 模特档案'],['1-2','1.2 模特库']]},
+ {id:'2',  t:'2. 服装',      req:true,
+  subs:[['2-1','2.1 服装单品'],['2-2','2.2 配饰']]},
+ {id:'3',  t:'3. 妆造',      req:true,
+  subs:[['3-1','3.1 妆容'],['3-2','3.2 发型']]},
+ {id:'4',  t:'4. 场地',      req:true,
+  subs:[['4-1','4.1 场地档案'],['4-2','4.2 场地库']]},
+ {id:'5',  t:'5. 道具',      req:false,
+  subs:[['5-1','5.1 道具清单'],['5-2','5.2 道具参考图']]},
+ {id:'6',  t:'6. 摄影器材',  req:true,
+  subs:[['6-1','6.1 器材清单'],['6-2','6.2 滤镜'],['6-3','6.3 灯光器材'],
+        ['6-4','6.4 附件'],['6-5','6.5 器材总表']]},
+ {id:'7', t:'7. 布光方案', req:true,
+  subs:[['7-1','7.1 方案类型'],['7-2','7.2 光位规划'],
+        ['7-3','7.3 布光渲染图'],['7-4','7.4 供电与安全']]},
+ {id:'8',  t:'8. 行程安排',  req:true,
+  subs:[['8-1','8.1 拍摄日甘特图'],['8-2','8.2 Timetable'],['8-3','8.3 耗时汇总']]},
+ {id:'9',  t:'9. 注意事项',  req:false,
+  subs:[['9-1','9.1 活动须知'],['9-2','9.2 签署确认']]},
+ {id:'10', t:'10. 应急预案', req:true,
+  subs:[['10-1','10.1 风险与 Plan B'],['10-2','10.2 决策机制']]},
+ {id:'11', t:'11. 参考样片', req:true,
+  subs:[['11-1','11.1 参考样片']]}
+];
+/* 章节号之后插入的分隔说明—— 让被合并/删除的编号有交代，避免「断档」观感 */
+const SEC_GAPS={
+  after6:'原「6.6 器材总单 + 存储卡算式」→ 器材改为 6.5 自动聚合总表，容量估算移入 Roadmap',
+  after11:'§12 交付与确认 → 导出后人工动作，不在本工具内'
+};
+const TYPES=['古风/旗袍','新中式','法式','森系','港风夜拍','街拍直闪','溯溪','其他'];
+const VENUE_STYLES=['古风/国风','新中式','自然/森系','城市街景','欧式建筑','复古胶片',
+                    '极简/影棚','赛博/夜景','运动/动态','其他'];
+const CAMS=['','Canon EOS R5','Canon EOS M5','DJI OSMO Action'];
+
+/* 全部必填项定义（不论是否已填）—— 完成度的「分母」用这个
+   key 格式 = sec + '-' + k，必须与 doneSet() 的 key 完全一致 */
+function reqAll(){
+  const L=[
+    /* §0 基本信息 13 要素 */
+    ['0','编号','0.1 · 策划案编号（需点「分配编号」）'],
+    ['0','版本','0.1 · 策划方案版本号'],
+    ['0','撰写日期','0.1 · 撰写日期'],
+    ['0','拍摄日期','0.2 · 拍摄日期'],
+    ['0','时段','0.2 · 拍摄时段'],
+    ['0','地点','0.3 · 拍摄地点'],
+    ['0','拍摄主题','0.4 · 拍摄主题'],
+    ['0','题材类型','0.5 · 题材分类'],
+    ['0','成片类型','0.5 · 成片类型'],
+    ['0','性质','0.6 · 拍摄性质'],
+    ['0','负责摄影师','0.6 · 负责摄影师'],
+    /* §1 模特档案 */
+    ['1','姓名','1.1 · 模特姓名'],
+    ['1','身高','1.1 · 模特身高'],
+    ['1','体重','1.1 · 模特体重'],
+    ['1','样图','1.1 · 模特样图'],
+    /* §4 场地档案 */
+    ['4','名称','4.1 · 场地名称'],
+    ['4','所在区','4.1 · 场地所在区'],
+    ['4','适配风格','4.1 · 适配风格'],
+    ['4','时效性','4.1 · 是否时效性场地'],
+    ['4','简述','4.1 · 场地简述'],
+    /* §3 妆造：只强制「整体风格 + 妆面参考图」与「发型风格 + 发型参考图」 */
+    ['3','妆-风','3.1 妆造 · 整体风格'],
+    ['3','妆-图','3.1 妆造 · 妆面参考图'],
+    ['3','发-效','3.2 妆造 · 发型风格'],
+    ['3','发-图','3.2 妆造 · 发型参考图'],
+    /* §7 布光：注——「是否会直射镜头」属现场供电安全信息，只在严谨方案采集，
+       故必须与「现场供电方案」一起放在下方严谨条件块内；若留在上面的静态列表里，
+       快捷方案会因为字段根本不渲染而永远差 1 项、导出被死锁拦截。 */
+    ['65','方案','7.1 · 方案类型（严谨/快捷）'],
+    /* §9 注意事项（v1.4）：已改为 5 条活动须知纯文本，无任何可填字段，
+       故不贡献必填项——原先 5 个关键勾选项（safety0/permit0/social0/model0/etiq0）
+       已随之移除。
+       注意：必填分母 reqAll().length 是**动态**的（随灯位行数与严谨/快捷变化），
+       不是固定常数，故此处不写死具体数字。 */
+    /* §10 应急 */
+    ['10','决策人','10. 应急 · 当天唯一决策人']
+    /* 注：「决策时点」为选填，不计入分母（需求确认口径） */
+  ];
+  /* §5 道具清单（v1.5 做实）：有道具则名称必填——空行不算未完成，
+     否则只点了「＋ 添加道具」没填名也会被拦，徒增摩擦。 */
+  (D.s5.道具||[]).forEach((r,i)=>{ if(String(r.名||'').trim())
+    L.push(['5','道具'+i,'5.1 道具 · 第'+(i+1)+'项名称']); });
+  /* §6 摄影器材（v1.5 做实）：同上有器材才算 */
+  ['器材','滤镜','灯','附件'].forEach(k=>
+    (D.s6[k]||[]).forEach((r,i)=>{ if(String(r.品||'').trim())
+      L.push(['6',k+i,'6 · '+k+'第'+(i+1)+'项']); }));
+
+
+  /* §11 参考样片（v1.5 做实）：至少 S11_MIN 张才够表达完整风格 */
+  if((D.s11.样片||[]).length>=S11_MIN)
+    L.push(['11','样片','11.1 · 参考样片（≥'+S11_MIN+' 张）']);
+  /* §8 行程安排（v1.6 做实）：与 §5 同策略——只有「事项非空」的行才入分母，
+     否则点了「＋ 添加时段」还没填事项就被拦，徒增摩擦。 */
+  (D.s8.行||[]).forEach((r,i)=>{ if(String(r.事||'').trim())
+    L.push(['7','行'+i,'8.2 Timetable · 第'+(i+1)+'项事项']); });
+  /* 条件必填：收入（其他 / 商业合作）—— 需求指定 */
+  if(D.s0.性质==='其他'||D.s0.性质==='商业合作')
+    L.push(['0','收入','0.6 · 收入金额（性质=其他/商业合作 时必填）']);
+
+  /* 逐行必填：布光「光位规划」表（行可增删，故动态生成）
+     注意：快捷方案下 3D 布光渲染图与渲染元数据均非必填，可正常导出 */
+  D.s7.灯位[0].forEach((r,i)=>{
+    L.push(['65','lamp'+i, '7.2 · '+r.灯位名+' 灯具']);
+    L.push(['65','lampN'+i,'7.2 · '+r.灯位名+' 灯光数量']);
+    L.push(['65','lampW'+i,'7.2 · '+r.灯位名+' 灯光功率']);
+    L.push(['65','lampA'+i,'7.2 · '+r.灯位名+' 控光附件数量']);
+    if(D.s7.方案==='严谨'){
+      L.push(['65','lampE'+i,'7.2 · '+r.灯位名+' 供电形式（严谨必填）']);
+      L.push(['65','lampD'+i,'7.2 · '+r.灯位名+' 光线方向']); } });
+  if(D.s7.方案==='严谨'){
+    L.push(['65','图','7.3 · 3D 布光渲染图（严谨必填）']);
+    ['场景','渲染器','渲染图例','渲染视角','摆放'].forEach(k=>
+      L.push(['65',k,'7.3 · '+({场景:'绘图场景/工程名',渲染器:'渲染器',
+        渲染图例:'渲染图例（须标明各灯位）',渲染视角:'渲染视角',摆放:'模特/灯具摆放方式'}[k])]));
+    L.push(['65','供电','7.4 · 现场供电方案（严谨必填）']);
+    L.push(['65','直射','7.4 · 是否会直射镜头（严谨必填）']); }
+  return L;
+}
+/* 未完成的必填项 —— 完成度分子差值 + 导出校验清单用这个 */
+function reqList(){
+  const done=doneSet();
+  return reqAll().filter(([s,k])=>!done.has(s+'-'+k));
+}
+function doneSet(){
+  const S=new Set(), rig=D.s7.方案==='严谨';
+  const add=(k,v)=>{ if(!REQ(v)) S.add(k); };
+  ['编号','版本','撰写日期','拍摄日期','时段','地点','拍摄主题',
+   '题材类型','成片类型','性质','负责摄影师']
+    .forEach(k=>add('0-'+k, D.s0[k]));
+  if(D.s0.性质==='其他'||D.s0.性质==='商业合作') add('0-收入', D.s0.收入);
+  /* §1 模特 */
+  ['姓名','身高','体重'].forEach(k=>add('1-'+k, D.s1[k]));
+  /* §1 样图：v1.5 起为数组（1-2 张），不能用 add()——
+     add() 走 REQ()= !String(v).trim()，而 String([...]) 永不为空（哪怕是空数组 []→''，
+     空数组恰好判为未填，但 [undefined] 之类会误判为已填），语义不可靠。
+     改为显式判断数组长度 ≥ 1。 */
+  if((D.s1.样图||[]).length>=1) S.add('1-样图');
+  /* §4 场地 */
+  ['名称','所在区','适配风格','时效性','简述'].forEach(k=>add('4-'+k, D.s4[k]));
+  /* §3 妆造 */
+  add('3-妆-风',D.s3.妆.风); add('3-妆-图',D.s3.妆.图);
+  add('3-发-效',D.s3.发.效); add('3-发-图',D.s3.发.图);
+  /* §7 布光 */
+  add('7-方案',D.s7.方案);
+  if(rig){
+    ['图','场景','渲染器','渲染图例','渲染视角','摆放','直射','供电']
+      .forEach(k=>add('7-'+k, D.s7[k]));
+    D.s7.灯位[0].forEach((r,i)=>{
+      add('7-lamp'+i,r.具); add('7-lampN'+i,r.数); add('7-lampW'+i,r.瓦);
+      add('7-lampA'+i,r.控数); add('7-lampE'+i,r.电); add('7-lampD'+i,r.方向); }); }
+  else {
+    D.s7.灯位[0].forEach((r,i)=>{
+      add('7-lamp'+i,r.具); add('7-lampN'+i,r.数);
+      add('7-lampW'+i,r.瓦); add('7-lampA'+i,r.控数); }); }
+  /* §9 注意事项（v1.4）：已改为 5 条纯文本须知，无勾选项 → 不再有完成判定。
+     原先此处用显式 ===true 规避 REQ() 的 String(false)==='false' 陷阱，
+     现已无checkbox，故该段整体移除。 */
+  /* §5 道具（v1.5）：与 reqAll 同构——只有名称非空的行才既入分母也计完成 */
+  (D.s5.道具||[]).forEach((r,i)=>{ if(String(r.名||'').trim()) S.add('5-道具'+i); });
+  /* §6 摄影器材（v1.5） */
+  ['器材','滤镜','灯','附件'].forEach(k=>
+    (D.s6[k]||[]).forEach((r,i)=>{ if(String(r.品||'').trim()) S.add('6-'+k+i); }));
+
+  /* §11 参考样片（v1.5）：长度达下限才算完成。
+     v1.6：原「11.出处 / 11.借鉴」两个必填项已随 11.2 小节一并删除。 */
+  if((D.s11.样片||[]).length>=S11_MIN) S.add('11-样片');
+  /* §8 行程安排（v1.6）：与 reqAll 同构——只有事项非空的行才既入分母也计完成 */
+  (D.s8.行||[]).forEach((r,i)=>{ if(String(r.事||'').trim()) S.add('8-行'+i); });
+  add('10-决策人',D.s10.人); add('10-决策时点',D.s10.时);
+  return S;
+}
+
+/* ==========================================================================
+   4. 工具
+   ========================================================================== */
+const $  = s=>document.querySelector(s);
+const esc = s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const wk  = ()=>{ const d=new Date(D.s0.拍摄日期||'');
+  return isNaN(d)?'':'周'+'日一二三四五六'[d.getDay()]; };
+
+/* ==========================================================================
+   图片压缩 → dataURL（v1.1 改为自适应体积控制）
+   --------------------------------------------------------------------------
+   为什么改：原实现固定「长边 1600px + q0.85」，实测单张仍可达 1.1 MB
+   （1600×1067 噪声图，是最难压的情况）。而整个 origin 的localStorage
+   只有 4 MB——十几张图就触顶，触顶后新内容静默存不进去。
+   所以目标从「压到固定尺寸」改为「**压到指定体积以内**」。
+
+   策略（顺序有讲究）：
+     ① 先把长边压到 1400px（够印刷看构图，再大纯属浪费）
+     ② 仍超标 → 逐级降 JPEG 质量（0.72→0.36），画质肉眼几乎无差
+     ③ 还超标 → 降分辨率（每轮 ×0.8，最低 900px），因为 JPEG 有体积地板，
+        噪声图再怎么降质量也压不下去，只能缩像素
+   典型人像/风景在 ①② 就收敛了，只有极端噪声图才会走到③。
+   ========================================================================== */
+const IMG_TARGET_KB = 160;      /* 单图目标上限。4MB / 160KB ≈ 25 张，够用 */
+const IMG_MAX_EDGE  = 1400;
+const IMG_MIN_EDGE  = 900;
+
+async function shrink(file, max=IMG_MAX_EDGE, q=.85, targetKB=IMG_TARGET_KB){
+  const bmp = await createImageBitmap(file);
+  const {width:ow, height:oh} = bmp;
+  const fit = m=>{ const sc=Math.min(1, m/Math.max(ow,oh));
+    return [Math.max(1,Math.round(ow*sc)), Math.max(1,Math.round(oh*sc))]; };
+  const enc = (w,h,qq)=>{
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(bmp,0,0,w,h);
+    return c.toDataURL('image/jpeg',qq);
+  };
+  const bytes = u => u.length * .75;          /* base64 → 原始字节近似 */
+
+  let [w,h] = fit(max);
+  let url = enc(w,h,q);
+
+  /* ② 逐级降质量：到此为止画质基本无损，是性价比最高的一段 */
+  if(bytes(url)/1024 > targetKB){
+    for(const qq of [.72,.62,.52,.44,.36]){
+      url = enc(w,h,qq);
+      if(bytes(url)/1024 <= targetKB) break;
+    }
+  }
+  /* ③ 仍超标 → 降分辨率（JPEG 体积地板效应，噪声图只能走这条） */
+  let guard = 0;
+  while(bytes(url)/1024 > targetKB && Math.max(w,h) > IMG_MIN_EDGE && guard++ < 4){
+    const [nw,nh] = fit(Math.round(Math.max(w,h)*.8));
+    w=nw; h=nh; url = enc(w,h,.5);
+  }
+  return {url, w, h, size:Math.round(bytes(url)),
+          over: bytes(url)/1024 > targetKB};
+}
+async function hash(s){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].slice(0,8).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+/* ==========================================================================
+   5. 图片槽渲染
+   ========================================================================== */
+function pickHTML(id,val){
+  return `<div class="pick ${val?'filled':''}" data-pick="${id}"
+    data-dz="${id}">
+    ${val?`<img src="${val}" alt="">
+      <button class="rm" data-rm="${id}" title="移除">✕</button>`
+         :`<div><div class="ph">⬒</div><div class="lb">点击/拖入</div></div>`}
+    <input type="file" accept="image/*" hidden data-fi="${id}">
+  </div>`;
+}
+async function setPick(id,file){
+  if(!file||!file.type.startsWith('image/')){ toast('请选择图片文件'); return; }
+  const r=await shrink(file);
+  ASSETS[id]={mime:'image/jpeg',w:r.w,h:r.h,size:r.size,uploadedAt:new Date().toISOString()};
+  setByPath(id,r.url);
+  /* 存盘失败必须让用户知道——这次修改没进存储，刷新就没了 */
+  if(!save()) return;
+  render();
+  toast('图片已嵌入（'+Math.max(r.w,r.h)+'px · '
+    +Math.round(r.size/1024)+' KB）'
+    +(r.over?'\n⚠️ 已尽力压缩，仍偏大，请留意顶栏存储占用':''));
+}
+/* v1.5：把图片写入「数组字段」的指定槽位。
+   区别于 setPick()——后者是标量字段（整字段只有一张图，替换即可）。
+   数组字段（如 §1 模特样图 1-2 张、§11 参考样片 5-25 张）需要：
+   ① 按 id 末段的索引定位；② 越界时追加而非替换；③ 容量上限校验。
+   idx 为 null时表示「追加到末尾」。 */
+async function setPickArr(key,arr,idx,file,max){
+  if(!file||!file.type.startsWith('image/')){ toast('请选择图片文件'); return false; }
+  if(arr.length>=max && (idx===null||idx>=arr.length)){
+    toast('最多 '+max+' 张，已达上限'); return false; }
+  const r=await shrink(file);
+  ASSETS[key+(idx===null?arr.length:idx)]={mime:'image/jpeg',w:r.w,h:r.h,size:r.size,
+    uploadedAt:new Date().toISOString()};
+  if(idx===null||idx>=arr.length) arr.push(r.url); else arr[idx]=r.url;
+  return true;
+}
+
+/* 路径格式：
+   len2 "0.编号" / "4.名称" / "7.图" / "10.人" → 标量
+   len3 "3.妆.风" / "3.发.图"                 → §3 两个对象
+   len4 "2.服装.0.款" / "7.灯位.0.具" / "10.风.0.触" → 行数组 */
+function rowArr(sec,a){
+  if(sec==='2')  return a==='配饰'?D.s2.配饰[0]:D.s2.服装;
+  if(sec==='7') return D.s7.灯位[0];
+  if(sec==='10') return D.s10.风[0];
+  if(sec==='5')  return D.s5.道具;     /* v1.5 §5 道具清单 */
+  if(sec==='6')  return D.s6[a]||null;  /* v1.5 §6 器材/滤镜/灯/附件 四子表 */
+  if(sec==='8')  return D.s8.行||null;     /* v1.6 §7 timetable 行数组 */
+  return null;
+}
+function boxOf(sec){
+  return sec==='0'?D.s0 : sec==='1'?D.s1 : sec==='4'?D.s4
+       : sec==='5'?D.s5 : sec==='6'?D.s6 : sec==='11'?D.s11   /* v1.5 新增 §5/§6/§11 */
+       : sec==='8'?D.s8                                          /* v1.6 新增 §7 行程 */
+       : sec==='7'?D.s7 : sec==='10'?D.s10 : null;
+}
+function setByPath(path,val){
+  const p=path.split('.');
+  if(p.length===4){ const arr=rowArr(p[0],p[1]); if(arr) arr[+p[2]][p[3]]=val; return; }
+  if(p.length===3){ (p[1]==='发'?D.s3.发:D.s3.妆)[p[2]]=val; return; }
+  const b=boxOf(p[0]); if(b) b[p[1]]=val;
+}
+function getByPath(path){
+  const p=path.split('.');
+  if(p.length===4){ const arr=rowArr(p[0],p[1]); return arr?arr[+p[2]][p[3]]:''; }
+  if(p.length===3) return (p[1]==='发'?D.s3.发:D.s3.妆)[p[2]];
+  const b=boxOf(p[0]); return b?b[p[1]]:'';
+}
+
+/* ==========================================================================
+   4b. §0 ↔ §1 / §4 双向同步（v1.7）
+   --------------------------------------------------------------------------
+   背景：第四批需求把 §0.3 / §0.7 的「从库选择」下拉下线了，改为两处各自手填，
+   结果同一份数据（模特姓名、场地名称）出现两处、互不同步——用户抱怨
+   「0.7 模特姓名应该要和 1.1 同步」「0.3 拍摄地点要和模块 4 同步」。
+
+   口径（用户拍板）：**双向同步，以档案侧为主**。
+     · §1 档案改→ §0.7 立即刷新（档案是主数据源）
+     · §0.7 改   → 反写 §1 档案（并同步模特库中的同名记录）
+     · §4 档案改→ §0.3 立即刷新
+     · §0.3 改   → 反写 §4 档案
+   实现要点：
+     · 只做「值级」同步，不做整节render()——否则输入框会失焦
+     · 用 syncPeer() 统一写 DOM，避免各处各写一套
+     · 反写档案时不回灌（避免 A→B→A 死循环），故设 suppress 标志
+   ========================================================================== */
+let _syncing=false;   /* 抑制标志：同步写DOM 时不再触发反向同步 */
+function setPeer(path,val){
+  const el=document.querySelector('[data-p="'+path+'"]');
+  if(!el||el.value===val) return false;
+  _syncing=true; el.value=val; _syncing=false;
+  syncMiss(el);
+  return true;
+}
+/* 模特档案 → §0.7 摘要卡（**单向**）
+   v1.0.10 变更：本函数原先是双向的（§0.7 → §1 反写），
+   随「§0.7 姓名输入框下线」改为单向 —— 模特资料只有 §1.1 一处可编辑，
+   避免两处可编辑框互相覆盖导致数据打架。
+   D.s0.模特 作为派生字段保留（导出 / CSV 仍在读它），由这里单向写入。 */
+function syncModelDown(){
+  D.s0.模特 = D.s1.姓名||'';
+}
+/* 场地档案 → §0.3 拍摄地点 */
+function syncVenueDown(){
+  D.s0.地点      = D.s4.名称||'';
+  D.s0.场地所在区 = D.s4.所在区||'';
+  setPeer('0.地点', D.s0.地点);
+  setPeer('0.场地所在区', D.s0.场地所在区);
+}
+/* §0.3 → §4 档案（反写） */
+function syncVenueUp(){
+  D.s4.名称   = D.s0.地点||'';
+  D.s4.所在区 = D.s0.场地所在区||'';
+  setPeer('4.名称', D.s4.名称);
+  setPeer('4.所在区', D.s4.所在区);
+  /* 若已绑定场地库记录（D.s4.场地Id 非空），同步库里的名称 */
+  const id=D.s4.场地Id;
+  if(id){
+    const i=VENUES.findIndex(x=>x.id===id);
+    if(i>=0){
+      const nv=VENUES[i].名称, nr=VENUES[i].所在区;
+      VENUES[i].名称=D.s4.名称;
+      VENUES[i].所在区=D.s4.所在区;
+      if(nv!==VENUES[i].名称||nr!==VENUES[i].所在区){
+        VENUES[i].updatedAt=new Date().toISOString();
+        saveVenues();
+      }
+    }
+  }
+}
+/* §7 表格 → 甘特图联动：改动「开始/耗时」后立刻重绘甘特条与结束时间。
+   注意用 render() 而非局部改 DOM：时间轴范围可能变化（如把第一项提前 2 小时），
+   刻度、关键节点位置都要跟着变，整段重渲染最稳。 */
+function dispatchSync(path){
+  if(_syncing) return;
+  /* §7：结束时间字段由「开始 + 耗时」派生，不接受直接输入 */
+  if(/^7\.行\.\d+\.止$/.test(path)){
+    const m=path.match(/^7\.行\.(\d+)\.止$/);
+    const r=D.s8.行[+m[1]];
+    const st=t2m(r&&r.时);
+    setByPath(path, (st!=null&&+r.耗时)? m2t(st+ +r.耗时):'');
+    save(); render(); return;
+  }
+  if(/^7\.行\.\d+\.(时|耗时|事)$/.test(path)){ render(); return; }
+  if(path==='1.姓名')            { syncModelDown(); patchCards(); }
+  else if(path==='4.名称'||path==='4.所在区'){ syncVenueDown(); patchCards(); }
+  else if(path==='0.地点'||path==='0.场地所在区'){ syncVenueUp(); patchCards(); }
+  /* §1 其他字段（身高/体重/备注/样图数）变化 → §0.7 摘要卡跟着变 */
+  else if(/^1\.(身高|体重|备注)$/.test(path)){ patchCards(); }
+}
+
+/* ==========================================================================
+   6. 渲染
+   ========================================================================== */
+function fld(label,val,path,opt={}){
+  const miss=opt.req&&REQ(val);
+  let ctl;
+  if(opt.type==='select')
+    ctl=`<select data-p="${path}" data-req="${opt.req?1:0}" class="${miss?'err':''}">
+      <option value="">— 请选择 —</option>
+      ${(opt.opts||[]).map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  else if(opt.type==='textarea')
+    ctl=`<textarea data-p="${path}" data-req="${opt.req?1:0}" class="${miss?'err':''}"
+      placeholder="${esc(opt.ph||'')}">${esc(val)}</textarea>`;
+  else
+    ctl=`<input type="${opt.type||'text'}" data-p="${path}" data-req="${opt.req?1:0}"
+      value="${esc(val)}"
+      class="${miss?'err':''}" placeholder="${esc(opt.ph||'')}">`;
+  return `<div class="f">
+    <label>${label}${opt.req?'<span class="req" title="强制项">*</span>':''}${
+      opt.rec?'<span class="rec">推荐</span>':''}</label>
+    ${ctl}
+    ${miss?`<div class="miss">⚠ 强制项未填</div>`:''}
+    ${opt.hint?`<div class="hint">${esc(opt.hint)}</div>`:''}
+  </div>`;
+}
+/* 强制项红框 + 「⚠ 强制项未填」提示的<b>双向</b>同步：
+   填上→ 撤红框与提示；删空 → 恢复红框与提示。
+   两者是独立节点（.err 在控件上、.miss 是同级 div），必须成对处理，
+   只撤 class 会让文字提示留在页面上误导决策。 */
+function syncMiss(el){
+  if(!el.dataset.req) return;          // 非强制项字段不参与
+  const box=el.closest('.f'); if(!box) return;
+  const empty=REQ(el.value);
+  el.classList.toggle('err', empty);
+  const m=box.querySelector('.miss');
+  if(empty && !m) box.insertBefore(
+    Object.assign(document.createElement('div'),{className:'miss',textContent:'⚠ 强制项未填'}),
+    box.querySelector('.hint')||null);
+  else if(!empty && m) m.remove();
+}
+function ck(label,on,path){
+  return `<label class="ck"><input type="checkbox" data-p="${path}" ${on?'checked':''}>
+    <span>${label}</span></label>`;
+}
+/* 章节标题栏。
+   v1.0.2：移除「原型做实 / 占位」徽标——那是开发阶段的内部标记，
+   对使用者无意义；且12 章节已全部做实，该徽标恒为「做实」，
+   留着反而像在提示"还有功能没做完"。
+   同时移除 core 参数（原本只用于决定该徽标的文案），签名简化为 (n, t, req)。
+   保留「含强制项」徽标：它有真实信息量——告诉用户本节有拦截导出的必填校验。 */
+function secHead(n,t,req){
+  return `<div class="sec-h"><span class="sec-n">${n}</span><h2>${t}</h2>
+    ${req?'<span class="badge b-rec">含强制项</span>':''}</div>`;
+}
+function phBox(n,t,fields){
+  return `<div class="ph-box"><b>${n} ${t} · 待实现</b>
+    字段：${fields}</div>`;
+}
+
+/* --- §0 基本信息（13 项要素）--- */
+const PERIODS=['上午','下午','晚上'];
+const NATURES=['客片','互勉','创作','商业合作','其他'];
+const KINDS  =['照片','视频','照片+视频'];
+
+function sec0(){
+  const no=D.s0.编号, other=D.s0.性质==='其他';
+  return `<section class="sec" id="sec-0">
+  ${secHead('0','基本信息',true)}
+  <div class="sec-d">拍摄策划案立项信息 · <b>13 项字段 + 只读编号</b>。
+  策划案编号为只读自动分配，是本策划案在目录、台账、成片侧的<b>唯一主键</b>。
+  <br>📌 模特资料统一在 <b>§1</b> 管理、场地信息统一在 <b>§4</b> 管理；
+  本节的 <b>0.3 拍摄地点</b>与 <b>0.7 模特档案摘要</b>只是这两处的<b>只读回显</b>，
+  要改请到对应章节，避免同一份数据填两处、互相打架。</div>
+
+  <h3 id="anc-0-1">0.1 立项标识</h3>
+  <div class="grid g3">
+    <div class="f">
+      <label>策划案编号<span class="req" title="主键，自动分配">*</span></label>
+      <div style="display:flex;gap:7px">
+        <input readonly value="${no?esc(no):''}"
+          style="background:var(--panel2);font-family:var(--fm);font-weight:600;
+                 color:var(--accent);cursor:default;letter-spacing:.3px"
+          placeholder="待分配">
+        <button class="btn sm" id="allocBtn" style="flex-shrink:0;white-space:nowrap">
+          ${no?'重新分配':'分配编号'}</button>
+      </div>
+      <div class="hint">规则 CX-YYYYMMDD-XX · ${no
+        ? '已占用 <b>'+esc(no)+'</b>，导出目录与文件名均以此为准'
+        : esc(AUTO_NO.preview(D.s0.撰写日期||D.s0.拍摄日期))}</div>
+    </div>
+    ${fld('策划方案版本号',D.s0.版本,'0.版本',{req:true,ph:'v1.0 / v2.0',
+      hint:'方案有实质变更时递增，供台账追溯'})}
+    ${fld('撰写日期',D.s0.撰写日期,'0.撰写日期',{type:'date',req:true,
+      hint:'编号的日期来源（回退：拍摄日期 → 今天）'})}
+  </div>
+
+  <h3 id="anc-0-2">0.2 拍摄时间</h3>
+  <div class="grid g3">
+    ${fld('拍摄日期',D.s0.拍摄日期,'0.拍摄日期',{type:'date',req:true,
+      hint:wk()?('拍摄日：'+wk()):'填入后自动显示星期'})}
+    ${fld('拍摄时段',D.s0.时段,'0.时段',{type:'select',req:true,opts:PERIODS,
+      hint:'决定 §8.1 甘特图取哪一组光影时刻：上午→上午那组，下午/晚上→下午那组'})}
+    <div class="f">
+      <label>预计时长</label>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input type="number" min="0" data-p="0.时长" value="${esc(D.s0.时长??'')}"
+          placeholder="8" style="flex:1">
+        <span style="font-size:12px;color:var(--text3);white-space:nowrap">小时</span>
+      </div>
+      <div class="hint">含妆造与换装，不含路程</div>
+    </div>
+  </div>
+
+  <h3 id="anc-0-3">0.3 拍摄地点<span class="rec" style="color:var(--accent)">联动 §4 场地档案</span></h3>
+  <div class="grid g2">
+    ${fld('地点名称 / 详细地址',D.s0.地点,'0.地点',{req:true,
+      ph:'例：广州·沙面公园（精确到可导航；室内须写楼层与具体厅）',
+      hint:'与 §4.1「场地名称」双向同步，改任一边另一边立即跟上'})}
+    ${fld('场地所在区',D.s0.场地所在区,'0.场地所在区',{req:false,
+      ph:'例：荔湾区',
+      hint:'与 §4.1「场地所在区」双向同步'})}
+  </div>
+  <div id="cardV">${venueCard()}</div>
+
+  <h3 id="anc-0-4">0.4 拍摄主题</h3>
+  ${fld('拍摄主题',D.s0.拍摄主题,'0.拍摄主题',{req:true,
+    ph:'一句话概括创作意图，例：清雅古风园林旗袍漫步',
+    hint:'主题是全案的锚点：服装、妆造、布光、后期都应服务于它'})}
+
+  <h3 id="anc-0-5">0.5 策划案分类</h3>
+  <div class="grid g2">
+    ${fld('题材分类',D.s0.题材类型,'0.题材类型',{type:'select',req:true,opts:TYPES,
+      hint:'沿用 T1-1 模板的题材枚举，用于台账按题材聚合'})}
+    ${fld('成片类型',D.s0.成片类型,'0.成片类型',{type:'select',req:true,opts:KINDS,
+      hint:'选含「视频」→ v2 联动 T1-3 分镜脚本模板'})}
+  </div>
+
+  <h3 id="anc-0-6">0.6 拍摄性质与收入<span class="req">*</span></h3>
+  <div class="grid g3">
+    ${fld('拍摄性质',D.s0.性质,'0.性质',{type:'select',req:true,opts:NATURES,
+      hint:'决定 §12 交付与确认流程走客片还是互勉口径'})}
+    ${fld('收入金额（元）',D.s0.收入,'0.收入',{type:'number',
+      ph:other?'必填：手动收入请填写金额':'0（非商拍可留 0）',
+      hint:other?'已选「其他」→ 手动收入，金额为必填':'商业合作必填；客片/互勉/创作可留 0'})}
+    ${fld('负责摄影师',D.s0.负责摄影师,'0.负责摄影师',{req:true,ph:'例：Jason'})}
+  </div>
+
+  <h3 id="anc-0-7">0.7 模特档案摘要<span class="rec" style="color:var(--accent)">来自 §1.1 模特档案</span></h3>
+  <div id="cardM">${modelCard()}</div>
+  </section>`;
+}
+
+/* --- §0.3 / §0.7 联动摘要卡：独立函数，供render() 与局部重绘共用 --- */
+function venueCard(){
+  const v=D.s4;
+  if(!v.名称&&!v.所在区) return `<div class="note" style="margin-top:10px">
+    📌 此处与 <b>§4 场地档案</b>双向同步（改任一边另一边立即跟上）。
+    §4 还有<b>适配风格 / 时效性 / 门票 / 场地简述 / 参考图</b>等现场必需信息，
+    <b>建议在 §4 一次填全</b>；若该场地已在 §4 场地库建档，本栏会自动带出。</div>`;
+  return `<div class="syncbox">
+    <div class="syncbox-h">⇄ 已与 §4 场地档案同步
+      <button class="btn sm" id="toV4">前往 §4 编辑 →</button></div>
+    <div class="syncbox-b">
+      <span><b>${esc(v.名称||'—')}</b></span>
+      <span>${esc(v.所在区||'未填所在区')}</span>
+      ${v.适配风格?`<span class="tag">${esc(v.适配风格)}</span>`:''}
+      ${v.时效性?`<span class="tag${v.时效性==='是'?' tag-warn':''}">${v.时效性==='是'?'⚠ 时效性场地':'非时效性'}</span>`:''}
+      ${v.门票?`<span class="tag">门票 ¥${esc(v.门票)}</span>`:''}
+      ${(v.图||[]).length?`<span class="tag">参考图 ${v.图.length} 张</span>`:''}
+    </div>
+    ${v.简述?`<div class="syncbox-n">${esc(v.简述)}</div>`:''}
+  </div>`;
+}
+function modelCard(){
+  const m=D.s1, mm=MODELS.find(x=>x.姓名===m.姓名);
+  if(!m.姓名) return `<div class="f">
+    <label>模特档案摘要</label>
+    <div class="hint" style="border:1px dashed var(--border);border-radius:var(--r2);
+      padding:11px 13px;background:var(--panel2)">
+      还没有模特资料。前往 <b>§1 模特档案</b> 填写姓名 / 身高 / 体重 / 样图，<br>
+      这里会自动汇总显示 —— <b>模特资料只需在 §1 填一次</b>，不必在本节重复录入。</div></div>`;
+  const src=mm?'已存模特库':'仅本策划案';
+  return `<div class="f">
+    <label>模特档案摘要<span class="rec" style="color:var(--text3)">来自 §1.1 模特档案 · ${src} · 在 §1 编辑</span></label>
+    <div class="syncbox" style="margin-top:0">
+      <div class="syncbox-b">
+        <span><b>${esc(m.姓名)}</b></span>
+        <span class="tag">${m.身高?esc(m.身高)+' cm':'身高未填'}</span>
+        <span class="tag">${m.体重?esc(m.体重)+' kg':'体重未填'}</span>
+        <span class="tag${(m.样图||[]).length?'':' tag-warn'}">样图 ${(m.样图||[]).length}/2</span>
+      </div>
+      ${m.备注?`<div class="syncbox-n">${esc(m.备注)}</div>`:''}
+      <div class="syncbox-h" style="margin-top:8px">
+        <button class="btn sm" id="toV1">前往 §1 编辑档案 →</button>
+        <span style="font-size:10.5px;color:var(--text3)">
+          §2 服装尺码与 §7 光位高度判断，都以 §1 的身体数据为准</span>
+      </div>
+    </div></div>`;
+}
+/* 同步后局部重绘两张摘要卡（不整页 render，避免输入框失焦） */
+function patchCards(){
+  const cv=document.getElementById('cardV'), cm=document.getElementById('cardM');
+  if(cv) cv.innerHTML=venueCard();
+  if(cm) cm.innerHTML=modelCard();
+}
+
+/* --- §1 模特档案 --- */
+const MODEL_FIELDS=[
+  ['姓名','text','例：小千代 / 昵称','本场主要出镜模特，唯一识别键'],
+  ['身高','number','例：168','单位 cm，影响构图与机位高度'],
+  ['体重','number','例：48','单位 kg，影响服装尺码与光位判断'],
+];
+function sec1(){
+  const m=D.s1, known=MODELS.some(x=>x.姓名===m.姓名);
+  return `<section class="sec" id="sec-1">
+  ${secHead('1','模特',true)}
+  <div class="sec-d">模特档案为<b>可复用资产</b>——同一模特二次合作时，
+  在下方「模特库」选中姓名即可<b>一键调出</b>其身高 / 体重 / 样图，无需重复填写。</div>
+
+  <h3 id="anc-1-1">1.1 模特档案<span class="req">*</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    本策划案使用的模特</span></h3>
+  <div class="grid g3">
+    ${MODEL_FIELDS.map(f=>fld(f[0],m[f[0]],'1.'+f[0],
+      {req:true,type:f[1],ph:f[2],hint:f[3]})).join('')}
+  </div>
+  <div style="margin-top:12px">
+    <label style="font-size:11.5px;color:var(--text2);display:block;margin-bottom:5px">
+      模特样图<span class="req" style="color:var(--red)">*</span>
+      <span class="rec" style="color:var(--amber)">1-2 张，建议正脸 + 全身各 1 张</span>
+      <span style="color:var(--text3)">（${(m.样图||[]).length}/2）</span></label>
+    <div class="grid gimg" style="gap:9px">
+      ${[0,1].map(i=>{
+        const src=(m.样图||[])[i];
+        return src? `<div class="pick filled" data-pick="1.样图.${i}" data-dz="1.样图.${i}">
+            <img src="${src}" alt="模特样图 ${i+1}">
+            <button class="rm" data-rm="1.样图.${i}" title="移除此图">✕</button>
+            <input type="file" accept="image/*" hidden data-fi="1.样图.${i}"></div>`
+          : `<div class="pick" data-pick="1.样图.add" data-dz="1.样图.add">
+            <div><div class="ph">⬒</div><div class="lb">第 ${i+1} 张</div></div>
+            <input type="file" accept="image/*" hidden data-fi="1.样图.add"></div>`;
+      }).join('')}
+    </div>
+    <div class="hint">用于造型师判断适合的妆面与服装尺码；导出时按顺序嵌入。
+      每格右上角 <b>✕</b> 可删除传错的图</div>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    ${fld('体格/ 身形特征',m.备注,'1.备注',{type:'textarea',
+      ph:'例：圆肩窄腰 / 梨形身材 / 身高比例腿长（影响站姿与服装剪裁）',
+      hint:'选填。属于可复用信息，存入模特库'})}
+  </div>
+
+  <div class="note">
+    📌 首次合作的新模特：填完上方档案后点<b>「存入模特库」</b>，之后即可被下拉复用。
+    已合作过的模特：直接在下方「模特库」点<b>「调入」</b>，档案自动填入本策划案。
+  </div>
+
+  <h3 id="anc-1-2">1.2 模特库<span class="rec" style="color:var(--blue)">${MODELS.length} 位</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    本地保存 · 预留CSV 与飞书多维表格接口</span></h3>
+  <div class="addrow no-print" style="margin-bottom:10px">
+    <button class="btn sm" id="saveModel">＋ 存入模特库</button>
+    <button class="btn sm" id="csvModels" title="CSV 与飞书接口的技术路径见 04 调研报告">⇩ 导出 CSV</button>
+    <button class="btn sm ghost" id="toFeishu" title="接口预留，当前版本不实现">↗ 同步到飞书</button>
+    <span style="font-size:11px;color:var(--text3);align-self:center">
+      存储位置：浏览器 localStorage（<code>sw_models</code>）· 不上传任何服务器</span>
+  </div>
+  ${MODELS.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th style="width:110px">姓名</th><th style="width:60px">身高(cm)</th>
+      <th style="width:60px">体重(kg)</th><th>体格特征</th>
+      <th style="width:100px">样图</th><th style="width:130px">操作</th></tr></thead>
+    <tbody>${MODELS.map(x=>`<tr>
+      <td><b>${esc(x.姓名)}</b></td>
+      <td>${esc(x.身高||'—')}</td>
+      <td>${esc(x.体重||'—')}</td>
+      <td>${esc(x.备注||'—')}</td>
+      <td>${(x.样图||[]).length
+        ?`<div style="display:flex;gap:3px">${(x.样图||[]).slice(0,2).map(s=>
+            `<img src="${s}" style="height:52px;width:40px;object-fit:cover;border-radius:4px">`).join('')}</div>`
+        :'—'}</td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn sm" data-mload="${esc(x.姓名)}">调入</button>
+        <button class="rowbtn" data-mdel="${esc(x.姓名)}" title="从模特库移除">✕</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table></div>`
+    :`<div class="ph-box">模特库还是空的——填完上方档案后点「存入模特库」。</div>`}
+  </section>`;
+}
+
+/* --- §4 场地档案 --- */
+function sec4(){
+  const v=D.s4;
+  return `<section class="sec" id="sec-4">
+  ${secHead('4','场地',true)}
+  <div class="sec-d">场地档案为<b>可复用资产</b>——场地库的「时效性 / 门票 / 参考图」
+  会随时间变化，每次选场后<b>带入当次快照</b>到本策划案，避免用过期信息排期。</div>
+
+  <h3 id="anc-4-1">4.1 场地档案<span class="req">*</span>
+    <span class="rec" style="color:var(--accent)">已选：${esc(v.名称||'未选择')}</span></h3>
+  <div class="grid g2">
+    ${fld('场地名称',v.名称,'4.名称',{req:true,ph:'例：沙面公园',
+      hint:'先在下方「场地库」选已有场地，或直接新建'})}
+    ${fld('场地所在区',v.所在区,'4.所在区',{req:true,
+      ph:'例：广州市·荔湾区（越细越好，助理据此导航）'})}
+  </div>
+  <div class="grid g3" style="margin-top:12px">
+    ${fld('适配风格',v.适配风格,'4.适配风格',{type:'select',req:true,opts:VENUE_STYLES,
+      hint:'与 §0.5 题材分类交叉校验，如「赛博朋克×自然景区」会提示冲突'})}
+    ${fld('是否时效性场地',v.时效性,'4.时效性',{type:'select',req:true,opts:['否','是'],
+      hint:'选「是」时§10 应急会提示需提前确认档期'})}
+    ${fld('场地门票（￥）',v.门票,'4.门票',{type:'number',ph:'0',
+      hint:'免费填 0；含项目另注（如：门票 0 / 拍摄另收场地费 200）'})}
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    ${fld('场地简述',v.简述,'4.简述',{type:'textarea',req:true,
+      ph:'例：欧陆建筑群+ 江边步道，午后逆光最佳；东门有停车场；人流较多需避开周末',
+      hint:'必填。一句话让助理/模特知道「这地方长什么样、怎么找、有什么坑」'})}
+  </div>
+  <div style="margin-top:12px">
+    <label style="font-size:11.5px;color:var(--text2);display:block;margin-bottom:5px">
+      场地参考图<span class="rec" style="color:var(--amber)">建议 5-10 张</span>
+      <span style="color:var(--text3)">（${v.图.length}/10）</span></label>
+    <div class="grid gimg">
+      ${v.图.map((src,i)=>`<div class="pick filled" data-pick="4.图.${i}" data-dz="4.图.${i}">
+        <img src="${src}" alt="">
+        <button class="rm" data-rm="4.图.${i}" title="移除此图">✕</button></div>`).join('')}
+      ${v.图.length<10?`<div class="pick" data-pick="4.图.add" data-dz="4.图.add">
+        <div><div class="ph">⬒</div><div class="lb">添加</div></div>
+        <input type="file" accept="image/*" multiple hidden data-fi="4.图.add"></div>`:''}
+    </div>
+  </div>
+
+  <h3 id="anc-4-2">4.2 场地库<span class="rec" style="color:var(--blue)">${VENUES.length} 处</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    本地保存 · 预留 CSV 与飞书多维表格接口</span></h3>
+  <div class="addrow no-print" style="margin-bottom:10px">
+    <button class="btn sm" id="saveVenue">＋ 存入场地库</button>
+    <button class="btn sm" id="csvVenues" title="CSV 与飞书接口的技术路径见 04 调研报告">⇩ 导出 CSV</button>
+    <button class="btn sm ghost" id="toFeishuV">↗ 同步到飞书</button>
+    <span style="font-size:11px;color:var(--text3);align-self:center">
+      存储位置：浏览器 localStorage（<code>sw_venues</code>）· 不上传任何服务器</span>
+  </div>
+  ${VENUES.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th style="width:52px">编号</th><th style="width:120px">场地名称</th>
+      <th style="width:120px">所在区</th><th style="width:90px">适配风格</th>
+      <th style="width:70px">时效性</th><th style="width:60px">门票</th>
+      <th style="width:70px">图</th><th style="width:150px">操作</th></tr></thead>
+    <tbody>${VENUES.map(x=>`<tr>
+      <td><code style="font-size:10.5px">${esc(x.id)}</code></td>
+      <td><b>${esc(x.名称)}</b></td>
+      <td>${esc(x.所在区||'—')}</td>
+      <td>${esc(x.适配风格||'—')}</td>
+      <td>${esc(x.时效性||'—')}</td>
+      <td>${esc(x.门票||'0')}</td>
+      <td>${(x.图||[]).length} 张</td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn sm" data-vload="${esc(x.id)}">调入</button>
+        <button class="rowbtn" data-vdel="${esc(x.id)}" title="从场地库移除">✕</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table></div>`
+    :`<div class="ph-box">场地库还是空的——填完上方档案后点「存入场地库」。</div>`}
+  </section>`;
+}
+
+/* --- §2 服装 --- */
+function sec2(){
+  const tbl=(key,cols,rows,path,phs)=>`
+    <div class="tbl-wrap"><table>
+      <thead><tr>${cols.map(c=>`<th>${c.h||c}</th>`).join('')}<th style="width:80px">参考图</th><th style="width:34px"></th></tr></thead>
+      <tbody>${rows.map((r,i)=>`<tr data-row="${key}.${i}">
+        ${cols.map(c=>`<td>${c.o=='ck'
+          ?`<input type="checkbox" data-p="${path}.${i}.${c.k}" ${r[c.k]?'checked':''}>`
+          :`<input data-p="${path}.${i}.${c.k}" value="${esc(r[c.k]??'')}"
+             placeholder="${esc(phs?.[c.k]||'')}">`}</td>`).join('')}
+        <td>${pickHTML(path+'.'+i+'.图',r.图)}</td>
+        <td><button class="rowbtn" data-del="${key}.${i}" title="删除本行">✕</button></td>
+      </tr>`).join('')}</tbody></table></div>
+    <div class="addrow no-print"><button class="btn sm" data-add="${key}">+ 添加一行</button></div>`;
+
+  return `<section class="sec" id="sec-2">
+  ${secHead('2','服装',true)}
+  <div class="sec-d">大纲要求：<b>所有出现在画面里的单品必须逐一写明并配参考图</b>。
+  参考图会随导出嵌入 PDF/DOCX 对应位置。
+  <br>📌 采用<b>单一服装表</b>：旗袍、连衣裙等<b>连体服饰无法拆分上下装</b>，
+  故不按「上身/下身/鞋袜」分区，改由「类别」列区分，逐件登记即可。</div>
+
+  <h3 id="anc-2-1">2.1 服装单品<span class="req">*</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    共 ${D.s2.服装.length} 行 · 连体服饰填一行即可</span></h3>
+  ${tbl('服装',[{k:'类',h:'类别'},{k:'品',h:'单品'},{k:'款',h:'款式描述'},
+      {k:'质',h:'材质'},{k:'色',h:'颜色'}],
+    D.s2.服装,'2.服装',{类:'旗袍/连衣裙',品:'丝缎',款:'立领盘扣长旗袍',
+      质:'真丝提花',色:'月白'})}
+  <div class="hint" style="margin:-4px 0 14px">
+    常用类别：旗袍 / 连衣裙 / 上衣 / 下装 / 外套 / 鞋 / 袜 / 帽 / 道具。
+    搭配穿的上下装（如衬衫+半裙）分两行登记；<b>旗袍、开衫、长风衣等连体款只填一行</b>。
+  </div>
+
+  <h3 id="anc-2-2">2.2 配饰<span class="rec" style="color:var(--amber);font-size:11px">
+    逐类确认，缺项留空即可</span></h3>
+  ${tbl('配饰',[{k:'类',h:'类别'},{k:'具',h:'具体'},{k:'必',h:'必带',o:'ck'}],
+    D.s2.配饰[0],'2.配饰',{具:'例：珍珠发簪'})}
+  </section>`;
+}
+
+/* --- §3 妆造 --- */
+function sec3(){
+  const c=D.s3.妆,h=D.s3.发;
+  return `<section class="sec" id="sec-3">
+  ${secHead('3','妆造',true)}
+  <div class="sec-d">强制项已收敛为<b>两件套：整体风格 + 参考图</b>。
+  腮红 / 口红 / 眼影等细项为选填——<b>有想法才写，没想法让化妆师自由发挥</b>，
+  避免过度约束导致现场僵化。
+  <br>大纲原话：「正确的发型可以修饰脸型、影响整体气质」——发型不是造型问题，是修饰手段。</div>
+
+  <h3 id="anc-3-1">3.1 妆容<span class="req">*</span></h3>
+  <div class="grid g3">
+    ${fld('整体风格',c.风,'3.妆.风',{req:true,ph:'例：淡妆修饰面容 / 妆面偏浓欧美调',
+      hint:'必填。给方向即可，化妆师据此发挥'})}
+    ${fld('腮红',c.腮,'3.妆.腮',{ph:'选填'})}
+    ${fld('口红',c.口,'3.妆.口',{ph:'选填·颜色号'})}
+    ${fld('眼影',c.眼,'3.妆.眼',{ph:'选填·颜色号'})}
+    ${fld('眼线 / 睫毛',c.睫,'3.妆.睫',{ph:'选填'})}
+    ${fld('禁用项',c.禁,'3.妆.禁',{ph:'选填·例：无美甲 / 不要大卧蚕'})}
+  </div>
+  <div style="margin-top:12px">
+    <label style="font-size:11.5px;color:var(--text2);display:block;margin-bottom:5px">
+      妆面参考图<span class="req" style="color:var(--red)">*</span>
+      <span class="rec" style="color:var(--amber)">1 张</span></label>
+    <div style="max-width:150px">${pickHTML('3.妆.图',c.图)}</div>
+    <div class="hint">导出时嵌入此处；一张能定调的照片胜过十行文字</div>
+  </div>
+
+  <h3 id="anc-3-2">3.2 发型<span class="req">*</span></h3>
+  <div class="grid g3">
+    ${fld('发型风格',h.效,'3.发.效',{req:true,ph:'例：古风盘发 / 长发波浪卷',
+      hint:'必填。写最终想要的造型效果'})}
+    ${fld('修饰意图',h.意,'3.发.意',{ph:'选填·例：修饰脸型 / 突出气质'})}
+  </div>
+  <div style="margin-top:12px">
+    <label style="font-size:11.5px;color:var(--text2);display:block;margin-bottom:5px">
+      发型参考图<span class="req" style="color:var(--red)">*</span>
+      <span class="rec" style="color:var(--amber)">1 张</span></label>
+    <div style="max-width:150px">${pickHTML('3.发.图',h.图)}</div>
+    <div class="hint">导出时嵌入此处</div>
+  </div>
+  </section>`;
+}
+
+/* --- §7 布光方案 --- */
+/* 光位 = 灯的角色（主/辅/轮廓…）；光线方向 = 灯相对被摄体的方位（顺光/逆光/…）。
+   两者语义不同，故拆为两列独立单选。 */
+const LIGHT_ROLES=['主光','辅光','轮廓光','背景光','眼神光','顶光','底光','特效光','造型光'];
+/* v1.9：删掉「测光」「测逆光」—— 这两个是测光表动作，不是光线方向，
+   放在方向单选框里语义错误（已移入 §7.4 供电与安全的检查清单）。 */
+const LIGHT_DIRS =['顺光','侧光','顺侧光','逆光','侧逆光',
+                    '顶光','底光','柔和无方向','自定义'];
+function sec65(){
+  const L=D.s7.灯位[0], rig=D.s7.方案==='严谨';
+  const roleOpts=(sel)=>`<option value="">—</option>`+
+    LIGHT_ROLES.map(o=>`<option ${sel===o?'selected':''}>${o}</option>`).join('');
+  const dirOpts=(sel)=>`<option value="">—</option>`+
+    LIGHT_DIRS.map(o=>`<option ${sel===o?'selected':''}>${o}</option>`).join('');
+  return `<section class="sec" id="sec-7">
+  ${secHead('7','布光方案',true)}
+  <div class="sec-d">v3 新增强制节 · <b>实测 17 套策划案 0% 填写（最大缺口）</b>。
+  <br>⚡ 支持<b>严谨 / 快捷两套方案</b>：严谨用 3D 布光图固化灯位并要求供电形式；
+  快捷只需登记光位与灯数，<b>3D 图与渲染元数据均非必填，可直接导出</b>。</div>
+
+  <h3 id="anc-7-1">7.1 方案类型<span class="req">*</span></h3>
+  <div class="grid g2">
+    <label class="ck" style="border:1px solid ${!rig?'var(--accent)':'var(--border)'};
+      border-radius:var(--r2);padding:11px 13px;background:${!rig?'var(--accent-bg)':'var(--panel2)'}">
+      <input type="radio" name="rig" data-p="7.方案" value="快捷" ${!rig?'checked':''}>
+      <span><b>快捷方案</b><br>
+      <span style="font-size:11.5px;color:var(--text2)">
+        · 光位 + 灯光数量 + 功率 + 控光附件<br>
+        · <b style="color:var(--green)">7.3 布光渲染图整节不显示</b><br>
+        · <b style="color:var(--green)">供电形式 / 渲染元数据全部非必填</b><br>
+        · 填完即可正常导出</span></span></label>
+    <label class="ck" style="border:1px solid ${rig?'var(--accent)':'var(--border)'};
+      border-radius:var(--r2);padding:11px 13px;background:${rig?'var(--accent-bg)':'var(--panel2)'}">
+      <input type="radio" name="rig" data-p="7.方案" value="严谨" ${rig?'checked':''}>
+      <span><b>严谨方案</b><br>
+        <span style="font-size:11.5px;color:var(--text2)">
+        · 光位 + 灯光数量 + 功率 + 控光附件<br>· <b style="color:var(--accent)">供电形式 + 现场供电方案</b><br>
+        · <b style="color:var(--accent)">显示 7.3 布光渲染图模块</b><br>
+        · <b style="color:var(--accent)">3D 示意图（set.a.light 3D STUDIO）必填</b></span></span></label>
+  </div>
+
+  <h3 id="anc-7-2">7.2 光位规划<span class="req">*</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    当前 ${L.length} 行 · 默认仅「主光」，按需点右侧按钮增加</span></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="width:96px">光位</th>
+      <th style="width:100px">光线方向${rig?'':'<span class="rec" style="color:var(--text3)">选填</span>'}</th>
+      <th style="width:140px">灯具</th>
+      <th style="width:56px">数量</th><th style="width:68px">功率(W)</th>
+      ${rig?'<th style="width:108px">供电形式</th>':''}
+      <th style="width:140px">控光附件</th><th style="width:52px">附件数</th>
+      <th>作用</th><th style="width:38px"></th></tr></thead>
+    <tbody>${L.map((r,i)=>`<tr>
+      <td><select data-p="7.灯位.${i}.灯位名" class="${REQ(r.灯位名)?'err':''}">
+        ${roleOpts(r.灯位名)}</select></td>
+      <td><select data-p="7.灯位.${i}.方向" class="${rig&&REQ(r.方向)?'err':''}">
+        ${dirOpts(r.方向)}
+        ${r.方向==='自定义'?`<input data-p="7.灯位.${i}.方向" value="${esc(r.方向自定义??'')}"
+          placeholder="自填方位" style="margin-top:4px">`:''}</select></td>
+      <td><input data-p="7.灯位.${i}.具" value="${esc(r.具)}"
+        class="${REQ(r.具)?'err':''}" placeholder="永诺 Lux100Pro"></td>
+      <td><input type="number" min="0" data-p="7.灯位.${i}.数" value="${esc(r.数??'')}"
+        class="${REQ(r.数)?'err':''}" placeholder="1"></td>
+      <td><input type="number" min="0" data-p="7.灯位.${i}.瓦" value="${esc(r.瓦??'')}"
+        placeholder="100"></td>
+      ${rig?`<td><select data-p="7.灯位.${i}.电" class="${REQ(r.电)?'err':''}">
+        <option value="">—</option>${['市电直连','充电电池','充电宝','发电机','接线板集中供电']
+          .map(o=>`<option ${r.电===o?'selected':''}>${o}</option>`).join('')}</select></td>`:''}
+      <td><input data-p="7.灯位.${i}.控" value="${esc(r.控??'')}"
+        placeholder="八角柔光箱 / 反光板"></td>
+      <td><input type="number" min="0" data-p="7.灯位.${i}.控数"
+        value="${esc(r.控数??'')}" placeholder="1"></td>
+      <td><input data-p="7.灯位.${i}.用" value="${esc(r.用)}" placeholder="压暗侧脸"></td>
+      <td><button class="rowbtn" data-del="灯位.${i}" title="删除本行">✕</button></td>
+    </tr>`).join('')}</tbody></table></div>
+  <div class="addrow no-print">
+    <button class="btn sm" data-add="灯位">+ 添加光位</button>
+    ${L.length>1?`<button class="btn sm" data-delrow="灯位">− 删除末行</button>`:''}
+    <span style="font-size:11px;color:var(--text3);align-self:center">
+      光位可选：${LIGHT_ROLES.join(' / ')}　·　方向可选：${LIGHT_DIRS.slice(0,9).join(' / ')}</span>
+  </div>
+  <div class="hint" style="margin:-2px 0 14px">
+    「光位」= 这盏灯的角色；「光线方向」= 灯相对被摄体的方位。两者独立，填错直接改下拉即可；
+    填错了也可点最右 ✕ 一键删除整行后重加。
+  </div>
+
+  ${rig?`<h3 id="anc-7-3">7.3 3D 布光渲染图<span class="req">*</span></h3>
+  <div class="sec-d" style="margin:0 0 12px;padding-bottom:0;border:none">
+    使用 <b>set.a.light「3D STUDIO」</b> 绘制并导出渲染图：把模特与灯具都建成模型，
+    在俯视/ 侧视 / 45° 视角下检查灯位关系，输出可直接给助理照做的图。
+  </div>
+  <div class="grid g3">
+    <div class="f">
+      <label>布光渲染图<span class="req">*</span></label>
+      ${pickHTML('7.图',D.s7.图)}
+      <div class="hint">导出 PNG/JPG 拖入此处<br>建议多视角：俯视 + 侧视 + 45°</div>
+    </div>
+    <div class="f" style="grid-column:span 2">
+      <label>渲染参数<span class="req">*</span>
+        <span style="font-weight:400;color:var(--text3);font-size:11px">
+        （便于他人在 set.a.light 复现同一张图）</span></label>
+      <div class="grid g2">
+        ${fld('绘图场景/工程名',D.s7.场景,'7.场景',{req:true,
+          ph:'例：小千代_v3_主光45（.sl 文件名）'})}
+        ${fld('渲染器',D.s7.渲染器,'7.渲染器',{req:true,
+          ph:'例：set.a.light 3D STUDIO',hint:'记录版本号便于日后复用同一渲染设置'})}
+      </div>
+      <div class="grid g2" style="margin-top:10px">
+        ${fld('渲染视角',D.s7.渲染视角,'7.渲染视角',{req:true,
+          ph:'例：俯视 45° + 正侧视',hint:'视角决定助理能否准确还原灯位'})}
+        ${fld('渲染图例',D.s7.渲染图例,'7.渲染图例',{req:true,
+          ph:'例：S1 主光 / S2 辅光 / S3 轮廓光',
+          hint:'图中须用编号标出每盏灯，与 §7.2 光位表一一对应'})}
+      </div>
+      <div class="grid g2" style="margin-top:10px">
+        ${fld('模特/灯具摆放方式',D.s7.摆放,'7.摆放',{req:true,
+          ph:'例：模特立于原点，三脚架呈120° 均布',
+          hint:'set.a.light 内的物体坐标与旋转，用于复现布局'})}
+        ${fld('画布底色',D.s7.底色,'7.底色',{ph:'例：深灰 #3a3a3a（便于看轮廓光）'})}
+      </div>
+    </div>
+  </div>`:''}
+
+  ${rig?`<h3 id="anc-7-4">7.4 供电与安全<span class="req">*</span></h3>
+  <div class="grid g3">
+    ${fld('总功率（W）',D.s7.总功率,'7.总功率',{ph:'按光位自动汇总，可手改',
+      hint:'自动=Σ(功率×数量)，手改后不再自动覆盖'})}
+    ${fld('现场供电方案',D.s7.供电,'7.供电',{req:true,ph:'例：场地市电 2 路 + 1 组充电宝'})}
+    ${fld('是否会直射镜头',D.s7.直射,'7.直射',{type:'select',req:true,
+      opts:['否','会 — 已加遮光罩','会 — 已加偏振镜','会 — 未处理']})}
+  </div>`:''}
+  </section>`;
+}
+
+/* --- §10 应急预案 --- */
+function sec10(){
+  const R=D.s10.风[0];
+  return `<section class="sec" id="sec-10">
+  ${secHead('10','应急预案',true)}
+  <div class="sec-d">v3 新增强制节· 实测 0%。文案原话：
+  「当拍摄外景时我们没办法确保天气一定就如预期一般美好……我们需要制定 planB」</div>
+
+  <h3 id="anc-10-1">10.1 风险与 Plan B<span class="req">*</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    ${R.length} 类风险 · 触发条件与 Plan B 逐条填写</span></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:150px">风险</th><th style="width:150px">触发条件</th><th>Plan B</th></tr></thead>
+    <tbody>${R.map((r,i)=>`<tr>
+      <td><b>${esc(r.险)}</b></td>
+      <td><input data-p="10.风.${i}.触" value="${esc(r.触)}"
+        placeholder="${r.险==='下雨'?'降水概率 &gt; 50%':'现场判断'}"></td>
+      <td><input data-p="10.风.${i}.备" value="${esc(r.备)}"
+        placeholder="${r.险==='下雨'?'有顶棚廊道 / 改室内 / 顺延':''}"></td>
+    </tr>`).join('')}</tbody></table></div>
+
+  <h3 id="anc-10-2">决策机制</h3>
+  <div class="grid g2">
+    ${fld('当天唯一决策人',D.s10.人,'10.人',{req:true,
+      ph:'例：Jason（当天唯一决策人，避免现场多人各自主张）',
+      hint:'当天所有顺延/ 改场地/ 收工的决定都由此一人拍板，避免现场分歧'})}
+    ${fld('决策时点',D.s10.时,'10.时',{req:false,
+      ph:'例：如遇天气突变，需在开拍前 24 小时决定是否顺延（选填）',
+      hint:'选填。多数情况当场决策即可；有明确提前量时可写，便于助理与模特预安排'})}
+  </div>
+  <div class="note">📌 第1 行「下雨」的触发条件会与<b>4.5 拍摄日天气</b>的降水概率联动
+  （M2 阶段实现；该节当前为占位）。</div>
+  </section>`;
+}
+
+/* --- §9 注意事项（v1.4：改为 5 条活动须知纯文本）--- */
+/* 口径确认（2026-10-04）：此前为「5 类 × 4 条现场执行勾选清单 + 5 个强制项」，
+   现按用户要求**彻底替换**为 5 条声明式活动须知纯文本。
+   两版性质不同：勾选项是「当天逐项过的执行清单」，条款是「事先告知的声明」，
+   前者已由独立导出的《拍摄前沟通 checklist》表格承载，故此处不再重复勾选。
+   副作用：§9 不再含任何必填项→ reqAll() 分母减少 5 项（分母本身是动态的，
+   随灯位行数与严谨/快捷变化，不是固定常数），SECS[9].req 改 false，
+   doneSet() 中的 §9 勾选判定同步移除（否则会残留永远为假的完成项）。 */
+const NOTE_ITEMS=[
+  '拍摄活动<b>安全第一</b>，严禁做出危险动作，违者后果自负；',
+  '拍摄活动欢迎各位男、女摄影师，<b>非擦边拍摄活动</b>，有非分之想之人请自觉离开；',
+  '拍摄活动<b>全程无接触</b>，禁止摄影师与模特产生任何形式的肢体接触；',
+  '参加本活动所产生的照片<b>默认摄影师与模特双方皆同意发布至社交媒体平台</b>，若涉及商业用途，需经过双方授权；',
+  '拍摄活动请妥善保管、保护好自己的随身物品、拍摄设备、道具等，<b>产生丢失及损坏后果自负</b>。'
+];
+function sec9(){
+  return `<section class="sec" id="sec-9">
+  ${secHead('9','注意事项',false)}
+  <h3 id="anc-9-1">9.1 活动须知<span class="req">*</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    启动前向全体参与者宣读并确认</span></h3>
+  <ol style="margin:6px 0 0;padding-left:0;list-style:none;counter-reset:n9">
+    ${NOTE_ITEMS.map((t,i)=>`<li style="display:flex;gap:11px;align-items:flex-start;
+      padding:11px 13px;border:1px solid var(--border);border-radius:9px;
+      background:var(--panel);margin-bottom:8px">
+      <span style="flex:0 0 22px;height:22px;border-radius:50%;
+        background:var(--accent);color:#fff;font-size:12px;font-weight:700;
+        display:flex;align-items:center;justify-content:center">${i+1}</span>
+      <span style="font-size:13.5px;line-height:1.75">${t}</span>
+    </li>`).join('')}
+  </ol>
+  <div class="note" style="margin-top:12px">
+    ℹ️ 以上 5 条为<b>活动须知</b>，非勾选项。其中第 1、3 条涉及<b>安全与肖像红线</b>，
+    第 4 条涉及<b>发布授权</b>，建议在拍摄开始前口头宣读一遍并取得模特明确同意。
+  </div>
+  <h3 id="anc-9-2" style="margin-top:18px">签署确认</h3>
+  <div style="font-size:12.5px;color:var(--muted);margin-bottom:7px">
+    打印本页或用浏览器「打印 → 另存为 PDF」即可带走完整须知与签署栏。</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr>
+      <th style="width:20%;text-align:left">角色</th>
+      <th style="width:24%;text-align:left">姓名</th>
+      <th style="width:22%;text-align:left">日期</th>
+      <th style="text-align:left">本人已阅读并同意上述 5 条须知</th>
+    </tr></thead>
+    <tbody>${[['模特',D.s0?.模特||''],['摄影师','']]
+      .map(([r,n])=>`<tr>
+        <td style="padding:7px 0">${r}</td>
+        <td style="padding:7px 0">${esc(n)||'<span style="color:var(--muted)">&nbsp;</span>'}</td>
+        <td style="padding:7px 0">&nbsp;</td>
+        <td style="padding:7px 0">☐ 是</td></tr>`).join('')}
+    </tbody>
+  </table>
+  </section>`;
+}
+function ph(n,t,fields){
+  return `<section class="sec" id="sec-${n}">
+  ${secHead(n,t,false)}
+  ${phBox(n,t,fields)}</section>`;
+}
+
+/* ==========================================================================
+   §8 行程安排（v1.6 做实 · v1.7 甘特图可拖拽）
+   --------------------------------------------------------------------------
+   口径确认：只做 timetable 管理模型，**不做人员分工**。
+     7.1 甘特图 —— 每行一个可拖拽色块；整块拖=改开始时间，边缘拖=改时长；
+                    与 7.2 表格双向实时同步（用户拍板：拖拽 + 表格输入框联动）
+     7.2 timetable 表 —— 开始 / 结束 / 事项 / 地点 / 耗时 / 备注，可增删行
+     7.3 汇总校验 —— 自动累计耗时，与 §0.2「预计时长」比对，超时给提醒
+   关键节点（黄金时刻 / 日落）作为整列参考标记画在甘特图背景上。
+   ========================================================================== */
+/* 把 HH:MM 转成分钟，便于在甘特图上换算位置 */
+function t2m(t){
+  const x=String(t||'').match(/^(\d{1,2}):(\d{2})$/);
+  return x? (+x[1])*60+(+x[2]) : null;
+}
+/* 分钟 → HH:MM（越界不wrap，超出 24:00 显示 24:00 便于发现排到天亮） */
+function m2t(m){
+  m=Math.max(0,Math.round(m));
+  return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+}
+/* 拖拽吸附粒度：15 分钟（拍摄排期按刻钟走，太细反而难对齐现实节点） */
+const SNAP=15;
+const snap=m=>Math.round(m/SNAP)*SNAP;
+/* 事项 → 色值：按关键词归类，让甘特图一眼看出「妆造/拍摄/收尾」阶段 */
+/* 阶段配色：① 先按 slotSet() 的节点名精确命中（「黄金时刻」「日落」等）
+   ② 再按关键词兜底。「逆光拍摄」这类应归shoot，所以精确名优先级高于关键词。 */
+const S8_SEG=[
+ [/妆|化妆|定妆|换装|服装|备装/,   'prep',  '#7d8a76'],
+ [/布光|架灯|测光|灯位|调试/,       'setup', '#8a8467'],
+ [/日落|蓝调|黄昏/,                 'sunset','#a05a4a'],
+ [/黄金|逆光|剪影|氛围/,            'golden','#b8863f'],
+ [/收工|收拾|归还|撤场|收尾/,       'wrap',  '#6f7d8a'],
+ [/拍摄|正片|快门|拍$/,            'shoot', '#8a7b68']
+];
+/* v1.9 需求4：取某个时段节点在 8.2 表格里的实际开始时间。
+   匹配口径与点击联动一致——事项名与节点名**完全相同**才算联动，
+   避免「逆光组拍摄」这类模糊匹配把节点时刻拽偏。 */
+/* v1.0.11：节点名兼容匹配。
+   为什么需要：v1.0.11 把「黄金时刻 / 日落」改名为
+   「上午黄金时刻 / 上午蓝调时刻 / 下午黄金时刻 / 下午蓝调时刻」，
+   而 slotRowIndex 原本是**精确名**比对。老策划案（v1.0.10 及以前）
+   的 §8.2 里存的仍是「黄金时刻」「日落」，改名后一比就miss，
+   联动会静默失效——用户在表格里填的时间不再反映到轴上，
+   且没有任何报错提示，属于典型的「升级即退化」。
+   对策：精确名优先 → 历史别名 → 基名（去掉上午/下午前缀）唯一命中。
+   基名唯一性校验是必要的：若表格里同时有「上午黄金时刻」和
+   「下午黄金时刻」两行（全天拍摄），不应由任一侧节点去认领。 */
+const SLOT_ALIAS={'日落':'蓝调时刻','黄昏':'蓝调时刻'};
+function slotBaseName(k){
+  let s=String(k||'').trim();
+  if(SLOT_ALIAS[s]) s=SLOT_ALIAS[s];
+  return s.replace(/^(上午|下午)/,'').trim();
+}
+function slotRowIndex(k){
+  const rows=D.s8.行||[], t=String(k||'').trim();
+  let i=rows.findIndex(r=>String(r.事||'').trim()===t);
+  if(i>=0) return i;
+  const base=slotBaseName(t);
+  if(!base) return -1;
+  const cand=rows.filter(r=>slotBaseName(r.事)===base);
+  return cand.length===1 ? rows.indexOf(cand[0]) : -1;
+}
+function slotActual(k){
+  const i=slotRowIndex(k);
+  if(i<0) return null;
+  const m=t2m((D.s8.行||[])[i].时);
+  return m==null?null:m2t(m);
+}
+/* v1.9：轴上被 8.2 联动命中的节点集合，渲染表格时用来打标记 */
+function slotLinkedSet(){
+  return new Set(slotSet().filter(s=>slotActual(s.k)!=null).map(s=>s.k));
+}
+function segOf(s){
+  const t=String(s||'').trim();
+  if(!t) return {seg:'shoot', c:'#8a7b68'};
+  /* ① 精确名：与 §8.1 关键节点同名 → 用节点配色，保证图例与节点标签一致 */
+  const hit=slotSet().find(x=>x.k===t);
+  if(hit) return {seg:hit.seg, c:hit.c};
+  /* ①b v1.0.11：基名匹配。老策划案表格里写的是「黄金时刻」「日落」，
+        与改过名的节点对不上，靠这里保住节点配色不退回通用拍摄色。 */
+  const bh=slotSet().find(x=>slotBaseName(x.k)===slotBaseName(t));
+  if(bh) return {seg:bh.seg, c:bh.c};
+  /* ② 关键词兜底 */
+  for(const[re,seg,c] of S8_SEG) if(re.test(t)) return {seg,c};
+  return {seg:'shoot', c:'#8a7b68'};
+}
+/* v1.9：把 8.2 的某一行滚动到视野内并闪一下，让「联动」有即时视觉反馈。 */
+function flashRow(i){
+  const tr=document.querySelector('[data-slotrow="'+i+'"]')
+    || [...document.querySelectorAll('#sec-8 tbody tr')][i];
+  if(!tr) return;
+  tr.classList.add('flash');
+  tr.scrollIntoView({block:'center'});
+  setTimeout(()=>tr.classList.remove('flash'),1400);
+}
+/* v1.9 需求4：局部重绘 §8。
+   为什么不能直接 render()：用户在 8.2 表格里正打着字，render() 会重建
+   #main 整棵子树，正在编辑的 input 被销毁 → 失焦 / 光标跳到开头 / 中文输入法断。
+   做法：只替换甘特容器（8.1）与表格里的派生列（结束时间、阶段色、联动标记），
+        表格 input 本身**不重建**，只改 value —— 焦点与光标都保住。 */
+function repaintGantt(){
+  const sec=document.getElementById('sec-8');
+  if(!sec) return;
+  const arr=D.s8.行||[], plan=+D.s0.时长||0;
+
+  /* --- 8.1 甘特图：整块换掉（这里没有正在编辑的控件） --- */
+  const old=sec.querySelector('.gt'); const box=document.createElement('div');
+  box.innerHTML=gtBlock();
+  const fresh=box.firstElementChild;
+  if(old&&fresh) old.replaceWith(fresh);
+
+  /* --- 8.1 v1.0.11：光影时刻覆盖区也要跟着重画。
+     为什么单独处理：拍摄时段（§0.2）或拍摄日期（§0.2）变化时，
+     甘特轴上四个光影节点的**时刻与名称**都变（上午黄金 ↔ 下午黄金）。
+     但 §0.2 在页面顶部，用户改的是那边的 select，不能整页 render()——
+     那会销毁 §8 表格里正在编辑的 input。所以只换这两个块。--- */
+  const oldS=sec.querySelector('.solarbox');
+  if(oldS){
+    const tb=document.createElement('div'); tb.innerHTML=solarOvrHtml();
+    const fs=tb.firstElementChild;
+    if(fs) oldS.replaceWith(fs);
+  }
+
+  /* --- 8.1 v1.0.11：图例也要跟着重画。
+     为什么容易漏：图例是 .gt 的**兄弟节点**（在 gtBlock() 之外），
+     上面那次 .gt.replaceWith 换不掉它。不补这一句的话，
+     §0.2 从「下午」切到「上午」，轴上节点已变成「上午黄金时刻」，
+     下方图例却还写着「下午黄金时刻 / 下午蓝调时刻」——自相矛盾。--- */
+  const oldL=sec.querySelector('[data-slot-legend]');
+  if(oldL) oldL.innerHTML=slotLegend();
+
+  /* --- 8.2 表格：只改派生列，不动 input --- */
+  const rows=sec.querySelectorAll('tbody tr');
+  arr.forEach((r,i)=>{
+    const tr=rows[i]; if(!tr) return;
+    const m=t2m(r.时), d=+r.耗时||0;
+    /* 结束时间（只读派生） */
+    const endEl=tr.querySelector('[data-p$=".止"]');
+    if(endEl){
+      const {T1}=gtRange();
+      endEl.value=(m!=null&&d)?m2t(m+d):'';
+      endEl.style.color=(m!=null&&d&&m+d>T1)?'var(--amber)':'var(--text2)';
+    }
+    /* 阶段色条 + 事项联动标记 */
+    const wrap=tr.querySelector('[data-p$=".事"]')?.parentElement;
+    if(wrap){
+      const {c}=segOf(r.事);
+      const bar=wrap.querySelector('span[title^="阶段色"]');
+      if(bar) bar.style.background=c;
+      const linked=slotRowIndex(String(r.事||'').trim())===i;
+      tr.classList.toggle('gt-linked',linked);
+      let mark=tr.querySelector('.lnk-mark');
+      if(linked){
+        if(!mark){ mark=document.createElement('span');
+          mark.className='lnk-mark'; wrap.appendChild(mark); }
+        mark.textContent='◆ 轴联动'+r.时;
+      } else if(mark) mark.remove();
+    }
+  });
+
+  /* --- 8.3 耗时汇总 --- */
+  const total=arr.reduce((s,r)=>s+(+r.耗时||0),0);
+  const cells=sec.querySelectorAll('.f div[style*="tabular-nums"], #anc-8-3 ~ .grid .f');
+  if(cells.length){
+    const box2=cells[0];
+    const b=document.createElement('div');
+    b.style.cssText='padding:9px 0;font-family:var(--fm);font-size:16px;font-weight:600;color:var(--accent)';
+    b.innerHTML=total+' 分钟<span style="font-size:12px;color:var(--text3);font-weight:400">'
+      +' （'+(total/60).toFixed(1)+' 小时）</span>';
+    box2.replaceWith(b);
+  }
+}
+/* 时间轴范围：以所有事项的最早开始 / 最晚结束为准，两端各留1 小时并对齐整点；
+   无有效时间时退回 08:00–20:00；最小跨度 6 小时。 */
+function gtRange(){
+  const arr=D.s8.行||[];
+  let lo=Infinity, hi=-Infinity;
+  arr.forEach(r=>{
+    const m=t2m(r.时); if(m==null) return;
+    lo=Math.min(lo,m);
+    hi=Math.max(hi,m+(+r.耗时||0));
+  });
+  if(!isFinite(lo)){ lo=8*60; hi=20*60; }
+  /* v1.0.11：把当前时段对应的光影节点也纳入范围。
+     起因：只按行程行算时，最早一行通常是妆造 08:30 → T0=07:00，
+     而「上午黄金 06:37 / 上午蓝调 06:28」落在 T0 之前，
+     被 gtBlock 的 m<T0 过滤掉 —— 结果「选上午却看不到上午那组光影」，
+     恰好废掉了本需求的核心场景。
+     只扩不缩：绝不能因为多了两个节点就把本来合适的轴拉宽。 */
+  try{
+    slotSet().forEach(sl=>{
+      if(!/黄金时刻|蓝调时刻/.test(sl.k)) return;   /* 只看光影节点，流程节点不动轴 */
+      const m=t2m(sl.t); if(m==null) return;
+      lo=Math.min(lo,m); hi=Math.max(hi,m+30);      /* 蓝调/黄金按 30 分钟窗算右界 */
+    });
+  }catch(e){ /* slotSet 在 TDZ 时静默降级为「只看行程行」 */ }
+  let T0=Math.floor((lo-60)/60)*60;
+  let T1=Math.ceil((hi+60)/60)*60;
+  while(T1-T0<360) T1+=60;
+  return {T0,T1,span:T1-T0};
+}
+/* v1.9 需求4：甘特图抽成独立函数，供 sec7() 首绘与 repaintGantt() 增量重绘共用。
+   之前这段是内联在 sec7() 里的，repaintGantt 拿不到，只能整页 render —— 表格输入会失焦。 */
+/* v1.9 需求4：甘特图抽成独立函数，供 sec7() 首绘与 repaintGantt() 增量重绘共用。
+   之前这段内联在 sec7() 里，repaintGantt 拿不到，只能整页 render() ——
+   而用户正在 8.2 表格里打字，整页重建会销毁 input 导致失焦 / 光标跳走 /输入法断。
+   现在 render 与增量重绘走同一条生成逻辑，两处永远不会画出不同的图。 */
+/* v1.0.11：图例文案动态生成。
+   此前是手写死的「妆造/布光/拍摄/黄金时刻/日落/收工」，
+   节点改名（黄金时刻→上午/下午黄金时刻、日落→上午/下午蓝调时刻）后
+   图例与实际节点对不上。改为从 slotSet() 生成，永远一致。 */
+function slotLegend(){
+  const ks=slotSet().map(s=>s.k);
+  return '灰色竖条为<b>关键节点参考线</b>（'+ks.join(' / ')
+    +'），典型值仅供参考；<b>冬季日落早约 1 小时</b>，'
+    +'逆光剪影、氛围片都靠黄金与蓝调这两段。';
+}
+/* 甘特图容器的可用像素宽度（去掉滚动条余量），供标签防重叠换算 */
+function gtHostW(){
+  const el=document.querySelector('.gt');
+  return el ? Math.max(280, el.clientWidth-14) : 900;
+}
+function gtBlock(){
+  const arr=D.s8.行;
+  const {T0,T1,span}=gtRange();
+  const pct=m=>Math.max(0,Math.min(100,(m-T0)/span*100));
+  /* 刻度：跨度 <= 9 小时按 1 小时一格，否则 2 小时一格 */
+  const step=span<=540?60:120;
+  let ticks='';
+  for(let m=T0;m<=T1;m+=step)
+    ticks+=`<div class="gt-tick${m%120===0?' major':''}" style="left:${pct(m)}%">${m2t(m)}</div>`;
+  /* 关键节点背景标记（整列高亮 + 顶部可点标签）
+     v1.9 需求4：节点时刻改为**跟随 8.2 timetable 的实际行**，而非固定常量——
+     用户把「黄金时刻」改到 17:20，轴上标签同步显示 17:20，两处不再打架。
+     没有对应行时才回落到 slotSet() 的典型值，并标「参考」以示区分。 */
+  /* v1.0.11：节点标签防重叠。
+     上午档时轴范围被拉到 05:00–19:00，五个标签全挤在 06:28–08:30 之间，
+     文字互相压盖糊成一团。做法：按 x 顺序遍历，与上一个标签的右边界
+     间距不足就往下让一行（标签绝对定位，天然可错位），并画一条细引线
+     回到真实时刻—— 错位不丢准确性。 */
+  const LABW=78;/* 标签近似宽度(px)，用于估算占位 */
+  let lastRight=-1e9, lastLine=0;
+  const slots=slotSet().map(sl=>{
+    /* v1.0.11 修既有缺陷：时刻必须在**一处**决定，绘图与标签文字共用。
+       原来绘图用 slotTime||sl.t（正确），标签却直接用 slotTime，
+       未与 8.2 联动时它是 null → 标签只显示节点名、缺时刻，
+       而背景块画在正确位置 —— 「块对字缺」，肉眼极易放过。 */
+    const linked=slotActual(sl.k)!=null;
+    const label =slotActual(sl.k) || sl.t;   /* 实际时刻，未联动则用典型值 */
+    const m=t2m(label);
+    if(m==null||m<T0||m>T1) return '';
+    const w=Math.max(0,pct(m+60)-pct(m));
+    /* 防重叠：估算该标签的像素左界，与上一个比较；不够就让到下一行 */
+    const hostW=gtHostW();
+    const px=pct(m)/100*hostW;
+    let line=0;
+    if(lastRight>-1e8 && px<lastRight+6) line=lastLine+1;
+    lastRight=px+LABW; lastLine=line;
+    const lead=line
+      ? `<span class="gt-slotlab-lead" style="left:calc(${pct(m)}% + 2px);height:${line*14}px"></span>`
+      : '';
+    return `<div class="gt-slot" style="left:${pct(m)}%;width:${w}%;--c:${sl.c}"></div>`+lead
+      +`<button class="gt-slotlab${linked?' linked':''}" data-slot="${esc(sl.k)}"
+         style="left:calc(${pct(m)}% + 3px);top:${line*14}px;--c:${sl.c}"
+         title="${esc(sl.k+' '+label+'（'+(linked?'已与 8.2 联动':'典型参考值，未在 8.2 排入')+'）'
+           +'\n'+sl.tip+'\n\n点击：已排则定位到 8.2 对应行 / 未排则新增该阶段')}">`
+        +`\u2605 ${esc(sl.k)} ${esc(label)}${linked?'':'<i class="ref">参考</i>'}</button>`;
+  }).join('');
+  /* 甘特条：整块拖 = 改开始；左右边缘 = 改时长 */
+  const bars=arr.map((r,i)=>{
+    const m=t2m(r.时); const dur=+r.耗时||0;
+    const{seg,c}=segOf(r.事);
+    if(m==null) return `<div class="gt-row"><div class="gt-bar"
+      style="left:0;width:100%;--c:var(--text3);opacity:.55"
+      title="未填开始时间——请在下方 8.2 填写">未填开始时间</div></div>`;
+    return `<div class="gt-row" data-gti="${i}">
+      <div class="gt-bar${pct(m+dur)-pct(m)<7?' slim':''}"
+        data-gti="${i}" data-seg="${seg}"
+        style="left:${pct(m)}%;width:${Math.max(1.2,pct(m+dur)-pct(m))}%;--c:${c}"
+        title="${esc(r.事||'未填事项')} \u00b7 ${esc(r.时)} 起${dur? dur+' 分钟（至 '+m2t(m+dur)+'）':''}">
+        <div class="gt-h l" data-gth="l"></div>
+        <span class="gt-t">${esc(r.事||'未填事项')}</span>
+        <span class="gt-d">${dur?dur+'m':''}</span>
+        <div class="gt-h r" data-gth="r"></div>
+      </div></div>`;
+  }).join('');
+  return `<div class="gt"><div class="gt-inner">
+    <div class="gt-head">${ticks}
+      <div class="gt-slotrow">${slots}</div>
+    </div>
+    <div class="gt-guide" id="gtGuide"></div>
+    <div class="gt-rows">${bars}</div>
+  </div></div>`;
+}
+function sec7(){
+  const arr=D.s8.行;
+  const total=arr.reduce((s,r)=>s+(+r.耗时||0),0);
+  const plan=+D.s0.时长||0;
+  const {T1}=gtRange();
+  const pct=m=>Math.max(0,Math.min(100,(m-gtRange().T0)/gtRange().span*100));
+  return `<section class="sec" id="sec-8">
+  ${secHead('8','行程安排',true)}
+  <h3 id="anc-8-1">8.1 拍摄日甘特图<span class="rec" style="color:var(--amber)">可拖拽</span></h3>
+  ${solarOvrHtml()}
+  <div class="sec-d" style="margin:0 0 8px">
+    轴上带 <span style="color:#b8863f;font-weight:600">★</span> 的是<b>光影时刻节点</b>
+    （黄金 / 蓝调），按你选的<b>拍摄时段</b>取对应那组，并随<b>拍摄日期</b>换算当月值。
+    标注「参考」= 用的内置典型值，未在 8.2 排进行程；点击可在 8.2 里定位或新增该阶段。
+  </div>
+  ${gtBlock()}
+  <div class="gt-hint">
+    <span><kbd>拖色块</kbd> 改开始时间</span>
+    <span><kbd>拖左右边缘</kbd> 改时长</span>
+    <span><kbd>双击色块</kbd> 跳到表格编辑</span>
+    <span><kbd>点★节点</kbd> 插入该阶段</span>
+    <span>吸附粒度 ${SNAP} 分钟</span>
+  </div>
+  <div class="hint" data-slot-legend>${slotLegend()}</div>
+
+  <h3 id="anc-8-2">8.2 Timetable<span class="rec" style="color:var(--blue)">${arr.length} 项</span>
+    <span style="font-weight:400;color:var(--text3);font-size:11px">
+    与上方甘特图双向联动</span></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="width:82px">开始时间<span class="req">*</span></th>
+      <th style="width:82px">结束时间</th>
+      <th style="width:24%">事项<span class="req">*</span></th>
+      <th style="width:16%">地点</th>
+      <th style="width:74px">耗时(分)</th>
+      <th>备注</th>
+      <th style="width:44px"></th>
+    </tr></thead>
+    <tbody>${arr.map((r,i)=>{
+      const m=t2m(r.时), d=+r.耗时||0;
+      const{seg,c}=segOf(r.事);
+      const over=m!=null&&d&&m+d>T1;
+      /* v1.9 需求4：事项名与轴上节点同名 → 该行与时段轴联动，打 ◆ 标记 */
+      const si=slotRowIndex(String(r.事||'').trim());
+      const linked=si>=0&&si===i;
+      return `<tr${linked?' class="gt-linked"':''} data-slotrow="${i}">
+      <td><input type="time" step="900" data-p="8.行.${i}.时" value="${esc(r.时)}">
+      <td><input type="time" step="900" data-p="8.行.${i}.止"
+        value="${m!=null&&d?m2t(m+d):''}"
+        readonly tabindex="-1" style="cursor:default;color:${over?'var(--amber)':'var(--text2)'}"
+        placeholder="—"></td>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <span style="width:4px;height:17px;border-radius:2px;background:${c};flex-shrink:0"
+          title="阶段色（与甘特图一致）"></span>
+        <input data-p="8.行.${i}.事" value="${esc(r.事)}" placeholder="例：拍摄 · 逆光组"
+          style="flex:1">${linked?`<span class="lnk-mark" title="本行与上方拍摄日时段轴联动：改这里的时间，轴上「${esc(r.事)}」节点同步移动">◆ 轴联动${esc(r.时)}</span>`:''}</div></td>
+      <td><input data-p="8.行.${i}.地" value="${esc(r.地)}" placeholder="例：沙面公园东门"></td>
+      <td><input type="number" min="0" step="5" data-p="8.行.${i}.耗时" value="${esc(r.耗时??'')}"></td>
+      <td><input data-p="8.行.${i}.备" value="${esc(r.备)}" placeholder="例：模特换第二套服装"></td>
+      <td><button class="rowbtn" data-del="行程.${i}" title="删除该行">✕</button></td>
+    </tr>`}).join('')}</tbody>
+  </table></div>
+  <div class="addrow no-print" style="margin-top:9px">
+    <button class="btn sm" data-add="行程">＋ 添加时段</button>
+    <span style="font-size:11px;color:var(--text3);align-self:center">
+      结束时间为<b>只读参考</b>（= 开始 + 耗时自动算出）；要改时长请改「耗时」或直接拖甘特条</span>
+  </div>
+
+  <h3 id="anc-8-3">8.3 耗时汇总</h3>
+  <div class="grid g3">
+    <div class="f">
+      <label>已排时长</label>
+      <div style="padding:9px 0;font-family:var(--fm);font-size:16px;font-weight:600;
+        color:var(--accent)">${total} 分钟
+        <span style="font-size:12px;color:var(--text3);font-weight:400">
+          （${(total/60).toFixed(1)} 小时）</span></div>
+      <div class="hint">由各行「耗时」自动累加</div>
+    </div>
+    <div class="f">
+      <label>§0.2 预计时长</label>
+      <div style="padding:9px 0;font-size:16px;font-weight:600">
+        ${plan? plan+' 分钟' : '<span style="color:var(--muted)">未填</span>'}</div>
+      <div class="hint">含妆造与换装，不含路程</div>
+    </div>
+    <div class="f">
+      <label>差异</label>
+      ${(()=>{
+        if(!plan||!total) return '<div style="padding:9px 0;font-size:13px;color:var(--muted)">填齐两边后自动比对</div>';
+        const d=total-plan;
+        return Math.abs(d)<=10
+          ? `<div style="padding:9px 0;font-size:15px;font-weight:600;color:var(--green)">✓ 基本吻合</div>
+             <div class="hint">排期与预计相差 ${Math.abs(d)} 分钟，在合理范围内</div>`
+          : `<div style="padding:9px 0;font-size:15px;font-weight:600;color:${d>0?'var(--red)':'var(--amber)'}">
+               ${d>0?'超出':'缺口'} ${Math.abs(d)} 分钟</div>
+             <div class="hint">${d>0?'考虑精简拍摄组数或延长拍摄时段':'考虑补齐安排或上调 §0.2 预计时长'}</div>`;
+      })()}
+    </div>
+  </div>
+  </section>`;
+}
+
+/* ==========================================================================
+   §7 甘特图拖拽引擎（v1.7）
+   --------------------------------------------------------------------------
+   三种拖拽模式：
+     move整块 → 改开始时间（吸附 SNAP 分钟）
+     l左边缘 → 改开始时间并保持结束时间不变（= 加时长）
+     r     右边缘 → 保持开始不变，只改时长
+   关键约束：
+     · 拖拽过程中**不重渲染**，只改DOM —— 重渲染会让元素被销毁、
+       pointermove 丢失 capture，出现「拖一半就断」的经典卡死。
+     · 松手才写回 D 并 render()，保证数据层与画面一致。
+     · 拖拽时间轴范围可能变化（如把最后一项往后拖），故拖拽中用**临时范围**
+       实时重算位置；松手后再按新数据重新渲染。
+   ========================================================================== */
+let gtDrag=null;
+function gtPxPerMin(){
+  const inner=document.querySelector('.gt-inner');
+  if(!inner) return 0;
+  return inner.getBoundingClientRect().width/gtRange().span;
+}
+/* 拖拽中重排所有甘特条：用临时数据算出新范围，视觉上立刻跟随手指 */
+function gtPaintLive(){
+  const inner=document.querySelector('.gt-inner');
+  if(!inner||!gtDrag) return;
+  const {T0,span}=gtDrag.range;
+  const pct=m=>Math.max(0,Math.min(100,(m-T0)/span*100));
+  document.querySelectorAll('.gt-bar[data-gti]').forEach(bar=>{
+    const i=+bar.dataset.gti, r=gtDrag.rows[i];
+    if(!r) return;
+    const m=t2m(r.时); const d=+r.耗时||0;
+    if(m==null){
+      bar.style.left='0%'; bar.style.width='100%'; return; }
+    const w=Math.max(1.2,pct(m+d)-pct(m));
+    bar.style.left=pct(m)+'%';
+    bar.style.width=w+'%';
+    bar.classList.toggle('slim', w<7);
+    const t=bar.querySelector('.gt-t'), dd=bar.querySelector('.gt-d');
+    if(t) t.textContent=r.事||'未填事项';
+    if(dd) dd.textContent=d?d+'m':'';
+    bar.title=(r.事||'未填事项')+' · '+r.时+' 起'+(d? d+' 分钟（至 '+m2t(m+d)+'）':'');
+  });
+  /* 顶部刻度同步平移，保证「现在」线与刻度仍对得上 */
+  const guide=document.getElementById('gtGuide');
+  if(guide){
+    const nm=new Date(); const nowM=nm.getHours()*60+nm.getMinutes();
+    if(nowM>=T0&&nowM<=T0+span){ guide.style.display='block';
+      guide.style.left=pct(nowM)+'%'; }
+    else guide.style.display='none';
+  }
+}
+/* 拖拽中时间轴可能撑大，重算范围（保留至少原有宽度，避免越拖越窄） */
+function gtRecalcRange(rows){
+  let lo=Infinity,hi=-Infinity;
+  rows.forEach(r=>{ const m=t2m(r.时); if(m==null)return;
+    lo=Math.min(lo,m); hi=Math.max(hi,m+(+r.耗时||0)); });
+  if(!isFinite(lo)){ lo=8*60; hi=20*60; }
+  let T0=Math.floor((lo-60)/60)*60, T1=Math.ceil((hi+60)/60)*60;
+  while(T1-T0<360) T1+=60;
+  /* 不允许比原始范围更窄，否则往回拖会被边界卡住 */
+  return {T0,T1,span:T1-T0};
+}
+document.addEventListener('pointerdown',e=>{
+  const h=e.target.closest('[data-gth]');
+  const bar=e.target.closest('.gt-bar[data-gti]');
+  if(!bar) return;
+  const mode=h?h.dataset.gth:'move';
+  const i=+bar.dataset.gti;
+  const r=(D.s8.行||[])[i]; if(!r) return;
+  if(document.body.dataset.mode==='check') return;   /* 核对态禁拖 */
+  const m=t2m(r.时);
+  if(m==null){ toast('这一行还没填开始时间——请先在下方 7.2 填写'); return; }
+  const px=gtPxPerMin(); if(!px) return;
+  e.preventDefault();
+  bar.setPointerCapture&&bar.setPointerCapture(e.pointerId);
+  bar.classList.add('dragging');
+  gtDrag={i,mode,px,x0:e.clientX,m0:m,
+    dur0:+r.耗时||0, rows:(D.s8.行||[]).map(x=>({...x})), range:gtRange()};
+  save();
+});
+document.addEventListener('pointermove',e=>{
+  if(!gtDrag) return;
+  const dm=(e.clientX-gtDrag.x0)/gtDrag.px;   /* 位移换算成分钟 */
+  const{mode,m0,dur0,rows,i,range}=gtDrag;
+  const r=rows[i];
+  if(mode==='move'){
+    r.时=m2t(snap(m0+dm));
+  } else if(mode==='l'){
+    /* 左边缘：结束时间钉住不动 → 开始 = 原结束 - 新时长 */
+    const end=m0+dur0;
+    const nd=Math.max(SNAP, snap(dur0-dm));
+    r.时=m2t(end-nd); r.耗时=nd;
+  } else {
+    r.耗时=Math.max(SNAP, snap(dur0+dm));
+  }
+  gtDrag.range=gtRecalcRange(rows);
+  gtPaintLive();
+});
+function gtEnd(){
+  if(!gtDrag) return;
+  const bar=document.querySelector('.gt-bar[data-gti="'+gtDrag.i+'"]');
+  if(bar) bar.classList.remove('dragging');
+  const i=gtDrag.i, rows=gtDrag.rows;
+  gtDrag=null;
+  /* 写回数据层：整行替换，保证「结束时间」参考值一起更新 */
+  D.s8.行[i]=rows[i];
+  save(); render();
+  const r=D.s8.行[i];
+  toast('已更新「'+(r.事||'该时段')+'」：'+r.时+' 起'
+    +(+r.耗时? ' · '+r.耗时+' 分钟（至 '+(t2m(r.时)+ +r.耗时>=1440?'24:00':m2t(t2m(r.时)+ +r.耗时))+'）':''));
+}
+document.addEventListener('pointerup',gtEnd);
+document.addEventListener('pointercancel',gtEnd);
+/* 双击甘特条 → 滚动到 7.2 表格对应行并聚焦「事项」输入框 */
+document.addEventListener('dblclick',e=>{
+  const bar=e.target.closest('.gt-bar[data-gti]'); if(!bar) return;
+  const i=bar.dataset.gti;
+  const inp=document.querySelector('[data-p="8.行.'+i+'.事"]');
+  if(!inp) return;
+  inp.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>inp.focus(),320);
+});
+
+/* ==========================================================================
+   §5 道具（v1.5 从占位做实）
+   ========================================================================== */
+const PROP_KINDS=['拍摄道具','互动道具','氛围道具','实用道具'];
+function sec5(){
+  const p=D.s5, arr=p.道具;
+  return `<section class="sec" id="sec-5">
+  ${secHead('5','道具',false)}
+  <div class="sec-d">本场要用到的道具与<b>参考图</b>。
+  清单供助理提前打包，参考图供模特与造型师对风格。</div>
+
+  <h3 id="anc-5-1">5.1 道具清单<span class="rec" style="color:var(--blue)">${arr.length} 项</span></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="width:30%">道具名称<span class="req">*</span></th>
+      <th style="width:22%">类别</th>
+      <th style="width:12%">数量</th>
+      <th>备注 / 采购情况</th>
+      <th style="width:44px"></th>
+    </tr></thead>
+    <tbody>${arr.map((r,i)=>`<tr>
+      <td><input data-p="5.道具.${i}.名" value="${esc(r.名)}" placeholder="例：油纸伞"></td>
+      <td><select data-p="5.道具.${i}.类">${PROP_KINDS.map(k=>
+        `<option ${r.类===k?'selected':''}>${k}</option>`).join('')}</select></td>
+      <td><input type="number" min="0" data-p="5.道具.${i}.数" value="${esc(r.数)}"></td>
+      <td><input data-p="5.道具.${i}.备" value="${esc(r.备)}"
+        placeholder="例：已购 / 需向场地借用 / 待归还"></td>
+      <td><button class="rowbtn" data-del="道具.${i}" title="删除该行">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+  <div class="addrow no-print" style="margin-top:9px">
+    <button class="btn sm" data-add="道具">＋ 添加道具</button>
+  </div>
+
+  <h3 id="anc-5-2">5.2 道具参考图<span class="rec" style="color:var(--amber)">建议 1-8 张</span>
+    <span style="color:var(--text3)">（${(p.图||[]).length}/8）</span></h3>
+  <div class="grid gimg">
+    ${(p.图||[]).map((src,i)=>`<div class="pick filled" data-pick="5.图.${i}" data-dz="5.图.${i}">
+      <img src="${src}" alt="道具参考图 ${i+1}">
+      <button class="rm" data-rm="5.图.${i}" title="移除此图">✕</button>
+      <input type="file" accept="image/*" hidden data-fi="5.图.${i}"></div>`).join('')}
+    ${(p.图||[]).length<8?`<div class="pick" data-pick="5.图.add" data-dz="5.图.add">
+      <div><div class="ph">⬒</div><div class="lb">添加</div></div>
+      <input type="file" accept="image/*" multiple hidden data-fi="5.图.add"></div>`:''}
+  </div>
+  <div class="hint">一次可多选。每格右上角 <b>✕</b> 可删传错的图；
+    图片仅用于排布与沟通，<b>最终以导出 PDF / DOCX 为准</b></div>
+  </section>`;
+}
+
+/* ==========================================================================
+   §6 摄影器材（v1.5 从占位做实，6 个子节全部落地）
+   ========================================================================== */
+const GEAR_HINT={
+  器材:'机身与镜头。例：Canon EOS R5 + RF 85mm f/1.2',
+  滤镜:'例： ND1000 / CPL / 星光镜',
+  灯:'只登记<b>带了什么灯</b>；怎么摆、功率多少、控光怎么加由 §7 布光方案负责',
+  附件:'例：三脚架 / 闪光转接 / 柔光罩 / 蜂巢'
+};
+function gearTable(key,rows,hint,unit){
+  return `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="width:26%">品类</th>
+      <th style="width:32%">型号 / 规格</th>
+      <th style="width:12%">${unit||'数量'}</th>
+      <th>备注</th>
+      <th style="width:44px"></th>
+    </tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr>
+      <td><input data-p="6.${key}.${i}.品" value="${esc(r.品)}" placeholder="品类"></td>
+      <td><input data-p="6.${key}.${i}.型" value="${esc(r.型)}" placeholder="型号 / 规格"></td>
+      <td><input type="number" min="0" data-p="6.${key}.${i}.数" value="${esc(r.数)}"></td>
+      <td><input data-p="6.${key}.${i}.备" value="${esc(r.备)}"></td>
+      <td><button class="rowbtn" data-delge="${key}.${i}" title="删除该行">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+  <div class="addrow no-print" style="margin-top:9px">
+    <button class="btn sm" data-addge="${key}">＋ 添加一行</button>
+    <span style="font-size:11px;color:var(--text3);align-self:center">${hint}</span>
+  </div>`;
+}
+function sec6(){
+  const g=D.s6;
+  return `<section class="sec" id="sec-6">
+  ${secHead('6','摄影器材',true)}
+  <div class="sec-d">登记<b>本场会带到的器材</b>，供助理打包与成本核算。
+  注意：<b>器材清单 ≠ 布光方案</b>——这里记「带了什么」，§7 记「怎么摆」。</div>
+
+  <h3 id="anc-6-1">6.1 器材清单<span class="req">*</span></h3>
+  ${gearTable('器材',g.器材,GEAR_HINT.器材)}
+
+  <h3 id="anc-6-2">6.2 滤镜</h3>
+  ${gearTable('滤镜',g.滤镜,GEAR_HINT.滤镜,'片数')}
+
+  <h3 id="anc-6-3">6.3 灯光器材<span class="rec" style="color:var(--accent)">只登记「带了什么灯」</span></h3>
+  ${gearTable('灯',g.灯,GEAR_HINT.灯,'数量')}
+
+  <h3 id="anc-6-4">6.4 附件</h3>
+  ${gearTable('附件',g.附件,GEAR_HINT.附件,'数量')}
+
+  ${(()=>{
+    /* v1.9：§6.5「器材总清单与存储卡算式」整节删除。
+       器材信息不再手工维护第二份，改为由 6.1–6.4 实时聚合出的只读总表 ——
+       页面上作为核对清单，导出时这张表就是器材部分的全部内容（信息聚合，不再重复维护）。*/
+    return `<h3 id="anc-6-5">6.5 器材总表
+      <span class="rec" style="color:var(--accent)">由 6.1–6.4 自动聚合 · 只读</span>
+      <button class="btn sm ghost no-print" id="genGear" style="margin-left:10px"
+        title="查看这张总表的汇总口径">? 汇总口径</button></h3>
+    <div data-gear-total>${gearTotalHtml()}</div>
+    `;
+  })()}
+  </section>`;
+}
+/* --------------------------------------------------------------------------
+   器材汇总：6.1–6.4 → 6.5 器材总表
+   --------------------------------------------------------------------------
+   规则：
+     · 同一张表内「品类+型号」完全相同的行合并数量
+     · 跨表不合并（滤镜与镜头同名也不会是同一件东西，合并反而误导）
+     · 品类为空时用该表默认名兜底（机身镜头 / 滤镜 / 灯光 / 附件）
+     · 数量为空按 1 计（用户只想登记「带了什么」时不至于算成 0件）
+   输出为多行文本，按品类分组，助理可逐行打勾。
+   -------------------------------------------------------------------------- */
+const GEAR_GROUP={
+  器材:'机身镜头', 滤镜:'滤镜', 灯:'灯光', 附件:'附件'
+};
+/* v1.9：补来源标注，让 6.5 总表每行都能标出它来自 6.1–6.4 的哪张表，
+   导出后助理按来源回溯核对，不用猜这条器材是从哪儿登记的。 */
+const GEAR_SRC={
+  器材:'6.1 器材清单', 滤镜:'6.2 滤镜',
+  灯:'6.3 灯光器材', 附件:'6.4 附件'
+};
+function gearSummary(){
+  const order=['器材','滤镜','灯','附件'];
+  const lines=[]; const stat=[]; const rows=[];
+  order.forEach(k=>{
+    const src=(D.s6[k]||[]).filter(r=>
+      String(r.品||'').trim()||String(r.型||'').trim());
+    if(!src.length){ stat.push({k,label:GEAR_GROUP[k],n:0,pcs:0}); return; }
+    /* 同表内合并「品类+型号」完全相同的行；跨表不合并 */
+    const map=new Map();
+    src.forEach(r=>{
+      const 品=String(r.品||'').trim()||GEAR_GROUP[k];
+      const 型=String(r.型||'').trim()||'（未填型号）';
+      const 数=parseFloat(r.数); const q=isFinite(数)&&数>0?数:1;
+      const key=品+' '+型;
+      if(map.has(key)) map.get(key).q+=q;
+      else map.set(key,{品,型,q,src:GEAR_SRC[k]});
+    });
+    const items=[...map.values()];
+    items.forEach(x=>{
+      lines.push(x.品+(x.型?' '+x.型:'')+' ×'+x.q);
+      rows.push(x);
+    });
+    stat.push({k,label:GEAR_GROUP[k],n:items.length,
+      pcs:items.reduce((s,x)=>s+x.q,0)});
+  });
+  return {lines,rows,stat,
+    totalN:stat.reduce((s,x)=>s+x.n,0),
+    totalP:stat.reduce((s,x)=>s+x.pcs,0)};
+}
+
+/* ==========================================================================
+   §11 参考样片（v1.5 从占位做实，并承接原 §8 后期需求的功能）
+   ========================================================================== */
+function sec11(){
+  const r=D.s11, arr=r.样片||[], n=arr.length;
+  return `<section class="sec" id="sec-11">
+  ${secHead('11','参考样片',true)}
+  <h3 id="anc-11-1">11.1 参考样片<span class="req">*</span>
+    <span class="rec" style="color:var(--amber)">${S11_MIN}-${S11_MAX} 张</span>
+    <span style="color:var(--text3)">（${n}/${S11_MAX}）</span></h3>
+  ${n<S11_MIN?`<div class="note warn" style="margin-bottom:10px">
+    ⚠️ 已上传 <b>${n}</b> 张，建议至少 <b>${S11_MIN}</b> 张才够表达完整风格。
+    不足 ${S11_MIN} 张会拦住导出。</div>`:''}
+  <div class="grid gimg">
+    ${arr.map((src,i)=>`<div class="pick filled" data-pick="11.样片.${i}" data-dz="11.样片.${i}">
+      <img src="${src}" alt="参考样片 ${i+1}">
+      <button class="rm" data-rm="11.样片.${i}" title="移除此图">✕</button>
+      <input type="file" accept="image/*" hidden data-fi="11.样片.${i}"></div>`).join('')}
+    ${n<S11_MAX?`<div class="pick" data-pick="11.样片.add" data-dz="11.样片.add">
+      <div><div class="ph">⬒</div><div class="lb">添加（可多选）</div></div>
+      <input type="file" accept="image/*" multiple hidden data-fi="11.样片.add"></div>`:''}
+  </div>
+  </section>`;
+}
+
+function render(){
+  updPower();
+  $('#main').innerHTML = [
+    sec0(), sec1(),
+    sec2(), sec3(), sec4(),
+    sec5(), sec6(),
+    sec65(), sec7(),
+    sec9(), sec10(), sec11()
+  ].join('');
+  navRender(); updProg(); updCap();
+  /* v1.8：DOM 已被重建，必须重新绑定滚动观察（见 ioRebind 注释） */
+  if(typeof ioRebind==='function') ioRebind();
+  /* 重建后立刻按当前位置校正一次高亮（否则 render 后停留在旧章节） */
+  if(typeof _scrollPick==='function') _scrollPick();
+  /* v1.0.12：首绘成功哨兵。到此处说明 sc0~s11 全部渲染、导航与进度都已更新，
+     页面是"活的"。§0 的白屏兜底据此判断是否需要弹故障面板。 */
+  window.__booted = true;
+}
+
+/* 存储占用指示条：常态显示 KB / 上限，≥75% 转黄，≥90% 转红并明确警示。
+   挂到 window.__capBar 是为了让 save() 失败时也能立即刷新，不必等下次 render。 */
+function updCap(){
+  const el = $('#capBar');
+  if (!el) return;
+  const s = storageStat();
+  const pct = Math.min(100, s.ratio * 100);
+  const cls = s.ratio >= CAP_BLOCK ? 'cap full' : (s.ratio >= CAP_WARN ? 'cap warn' : 'cap');
+  el.className = cls;
+  el.innerHTML =
+    '<div class="cap-t"><span>' + kb(s.used) + '</span><span>' + kb(s.total) + 'K</span></div>'
+    + '<div class="cap-b"><div class="cap-f" style="width:' + pct.toFixed(1) + '%"></div></div>';
+  el.title = '本地存储占用 ' + kb(s.used) + ' KB / ' + kb(s.total) + ' KB（'
+    + pct.toFixed(0) + '%）\n图片 ' + s.imgN + ' 张\n'
+    + (s.ratio >= CAP_BLOCK
+        ? '⚠️ 已接近上限，新内容可能无法保存。请「导出整案」备份后删减图片。'
+        : (s.ratio >= CAP_WARN
+            ? '偏满。建议先「导出整案」备份，再删减参考图 / 样片。'
+            : '空间充足。图片会占绝大部分体积。'));
+}
+window.__capBar = updCap;
+
+/* ==========================================================================
+   7. 侧边栏 + 完成度
+   ========================================================================== */
+function navRender(){
+  const done=doneSet(), ALL=reqAll();
+  const per={};
+  ALL.forEach(([sec,k])=>{
+    per[sec]=per[sec]||{d:0,t:0}; per[sec].t++;      /* 分母=必填项总数 */
+    if(done.has(sec+'-'+k)) per[sec].d++;
+  });
+  /* v1.7 导航两级化：一级=章节（含必填完成度），二级=真实子节锚点。
+     当前滚动到的位置（cur）所在的子节默认展开，其余折叠；
+     展开状态记在 openSec，用户手动折叠/展开后不再被自动覆盖。 */
+  const activeSub = cur+'|'+curSub;
+  const isOpen = s => (openSec.has(s.id) || (openSec.size===0 && activeSub.startsWith(s.id+'|')));
+  $('#nav').innerHTML = SECS.map(s=>{
+    const p=per[s.id]; let cls='',st='';
+    if(p){ const r=p.d/p.t;
+      st=p.d+'/'+p.t; cls = r>=1?'done':(p.d>0?'part':''); }
+    const open=isOpen(s);
+    const sub=s.subs?s.subs.map(([sid,label])=>
+      `<a href="#anc-${sid}" class="sub ${s.id+'|'+sid===activeSub?'on':''}"
+        ><span>${esc(label)}</span></a>`).join(''):'';
+    return `<div class="navgrp ${cls}">
+      <div class="navrow">
+        <a href="#sec-${s.id}" class="${s.id===cur?'on':''}">
+          <span>${esc(s.t)}</span><span class="st">${st}</span></a>
+        ${s.subs?`<button class="caret ${open?'open':''}" data-fold="${s.id}"
+          title="展开/收起子节">▾</button>`:''}
+      </div>
+      ${(s.subs&&open)?`<div class="navsubs">${sub}</div>`:''}
+    </div>`
+    + (SEC_GAPS['after'+s.id]?`<div class="gapnote">${esc(SEC_GAPS['after'+s.id])}</div>`:'');
+  }).join('');
+}
+let cur='0', curSub='0-1';
+/* 用户手动展开/折叠的章节；为空时按「跟随当前滚动位置」自动展开 */
+const openSec=new Set();
+function updProg(){
+  const done=doneSet(), ALL=reqAll();
+  const t=ALL.length, d=ALL.filter(x=>done.has(x[0]+'-'+x[1])).length;
+  $('#pTxt').textContent = d+' / '+t;
+  $('#pBar').style.width = (t?d/t*100:0)+'%';
+}
+
+/* ==========================================================================
+   8. 事件
+   ========================================================================== */
+/* input 事件：立即更新「强制项红框」与派生提示（如拍摄日星期、总功率），
+   但不整体重渲染——否则输入框会失焦 */
+function patchLive(el){
+  const p=el.dataset.p; if(!p) return;
+  /* 1. 字段红框 + 「⚠ 强制项未填」提示。
+     注意：红框与提示是**两个独立节点**（.err 在控件上、.miss 是同级 div），
+     只remove('err') 会让文字提示留在页面上——用户填完了还看到「强制项未填」，
+     属于会误导决策的显示缺陷，故必须成对清除。 */
+  if(el.classList.contains('err') && !REQ(el.value)) el.classList.remove('err');
+  /* 1b. 强制项红框与「⚠ 强制项未填」提示双向同步（填上撤、删空恢复）。
+     注意：红框与提示是两个独立节点（.err 在控件上、.miss 是同级 div），
+     只 remove('err') 会让文字提示留在页面上——用户填完了还看到「强制项未填」，
+     属于会误导决策的显示缺陷，故必须成对处理。 */
+  syncMiss(el);
+  /* 2. 派生提示 */
+  if(p==='0.拍摄日期'){
+    const box=el.closest('.f'); const hint=box&&box.querySelector('.hint');
+    if(hint) hint.textContent = wk() ? ('拍摄日：'+wk()) : '填入后自动显示星期';
+  }
+  /* 3. §7 灯位：填了值就撤红框；并重算总功率 */
+  const m=p.match(/^7\.灯位\.(\d+)\.(具|数|瓦|控数|电|方向)$/);
+  if(m){ const k=m[2]==='具'?'具':m[2];
+    document.querySelectorAll('[data-p="7.灯位.'+m[1]+'.'+k+'"]')
+      .forEach(x=>x.classList.remove('err')); }
+  if(/^7\.灯位\.\d+\.(瓦|数)$/.test(p)) updPower();
+  /* 4. 总功率：用户手改后停止自动覆盖；清空则恢复自动并立即重算
+        注意 REQ(v) 语义为「是否为空」：true=空，false=有值 */
+  if(p==='7.总功率'){
+    if(REQ(el.value)){ D.s7._pwAuto=true; updPower(); }   // 清空 → 恢复自动
+    else              D.s7._pwAuto=false;                 // 手改 → 锁定
+  }
+  /* 5. v1.9 需求4：改 §8.2 timetable 的时间/时长/事项 → 甘特图与时段轴必须跟着动。
+     之前只走 patchLive()（只清红框），甘特条与轴上节点都不重绘，
+     表现为「表格改了时间，甘特图纹丝不动」——两处数据打架。
+     局部重绘 §8，不整页 render（否则正在输入的框会失焦）。 */
+  if(/^8\.行\.\d+\.(时|耗时|事)$/.test(p)) repaintGantt();
+  /* v1.0.9 修复：6.1–6.4 任一字段变化 → 重算 6.5 只读总表。
+     此前 6.5 只在首绘时算一次，用户填完 6.1–6.4 总表永远不刷新
+     （与 v1.8「生成器材总单」按钮失效同源：数据进了D，却没人读它）。*/
+  if(/^6\.(器材|滤镜|灯|附件)\.\d+\.(品|型|数|备)$/.test(p)) repaintGearTotal();
+  /* v1.0.11：拍摄日期 / 拍摄时段变化 → 甘特轴的光影节点要重算。
+     此前 PERIODS（上午/下午/晚上）这个下拉压根没有代码消费它——
+     §0.2 写着「决定行程表起止时间与日落窗口」，实际改了毫无影响。
+     现在时段真正生效了：上午→取上午那组，下午/晚上→取下午那组。*/
+  if(p==='0.拍摄日期'||p==='0.时段'){
+    /* 先更新 8.1 里的星期提示（拍摄日期改动的原有行为） */
+    repaintGantt();
+  }
+}
+/* 总功率 = Σ(功率 × 数量)
+   注意：必须写回 D，不能只写 DOM —— 否则下一次 render() 会把手填结果冲掉。
+   _pwAuto 为 true 表示「自动值」，用户手改后置false，停止自动覆盖。*/
+function totalW(){
+  return D.s7.灯位[0].reduce((s,r)=>{
+    const w=parseFloat(r.瓦), n=parseFloat(r.数);
+    return s+(isFinite(w)?w:0)*(isFinite(n)?n:0);
+  },0);
+}
+/* v1.0.11：光影时刻手填覆盖的两个按钮。
+   不用 onclick 内联—— 事件委托挂一次，后续重绘换掉元素也不用重新绑定。*/
+document.addEventListener('click', e=>{
+  const ap=e.target.closest('[data-solar-apply]');
+  const cl=e.target.closest('[data-solar-clear]');
+  if(!ap&&!cl) return;
+  e.preventDefault();
+  if(cl){
+    delete SOLAR_OVR[shotMonth()];
+    saveSolarOverride();
+    repaintGantt();
+    toast('已清除' + shotMonth() + ' 月手填值，回落到内置表');
+    return;
+  }
+  /* 应用：把四个区间里「起点填了」的项收进覆盖对象。
+     终点留空时用起点 + 时长反推，避免出现 05:00→空白这种半截数据。 */
+  const box=e.target.closest('.solarbox'); if(!box) return;
+  const cur=SOLAR_OVR[shotMonth()]||{};
+  const out={...cur};
+  let any=false;
+  ['amG','amB','pmG','pmB'].forEach(k=>{
+    const a=box.querySelector('[data-solar="'+k+'0"]');
+    const b=box.querySelector('[data-solar="'+k+'1"]');
+    if(!a) return;
+    const s0=(a.value||'').trim(), s1=(b&&b.value||'').trim();
+    if(!s0&&!s1){ delete out[k]; return; }
+    let end=s1;
+    if(!end&&s0){
+      const st=t2m(s0); /* 内置时长作为默认长度 */
+      const base=(SOLAR[shotMonth()]||{})[k]||['00:00','00:00'];
+      let len=(t2m(base[1])??0)-(t2m(base[0])??0); if(!len) len=30;
+      end=m2t((st??0)+len);
+    }
+    out[k]=[s0||end,end]; any=true;
+  });
+  if(!any){ toast('还没有填任何时刻','warn'); return; }
+  SOLAR_OVR[shotMonth()]=out; saveSolarOverride();
+  repaintGantt();
+  toast('已应用' + shotMonth() + ' 月手填的光影时刻');
+});
+
+/* 版本号同步：静态 HTML 里写了一份占位，这里再用 APP_VER 覆盖。
+   作用有3 个：
+     ① 改版只需改 APP_VER 一处常量，不必记得手改 HTML；
+     ② 文档标题与浏览器标签页也带上版本，多窗口对比时不会搞混；
+     ③ localStorage 里存一个 build 标记，用户反馈问题时能直接说清版本。
+   注意：顶栏 .top 在 @media print 里是隐藏的，所以 PDF 上不带版本号——
+     这是有意的，导出件只呈现策划安排本身。 */
+function syncVersion(){
+  const v=APP_VER;
+  const b=document.getElementById('verBadge');
+  if(b){ b.textContent=v;
+    b.title='工具版本 '+v+'（模板 T1-'+(TPL_VER||'v3.0')+'）\n构建：'+(document.lastModified||''); }
+  document.title='拍摄策划工作台 '+v;
+  try{ localStorage.setItem('sw_app_ver',v); }catch(e){}
+}
+/* --------------------------------------------------------------------------
+   6.5 器材总表：局部重绘（修复「填了 6.1–6.4 但总表不刷新」）
+   --------------------------------------------------------------------------
+   为什么必须局部重绘：整节重绘（sec65()）会连6.1–6.4 的 input 一起重建，
+   用户正在输入的框会**失焦丢焦点**，一个字打到一半就断。
+   所以只换 6.5 自己的 innerHTML —— 上面四张表完全不动。 */
+function gearTotalHtml(){
+  const t=gearSummary();
+  if(!t.totalN){
+    return `<div class="note" style="margin:0">6.1–6.4 还没有有效条目。`
+      +`在上面的四张表里登记器材，这里会自动聚合成一张总表，导出时直接使用。</div>`;
+  }
+  return `<div class="tbl-wrap"><table class="geartotal">
+    <thead><tr><th style="width:110px">品类</th><th>型号 / 名称</th>
+      <th style="width:70px">数量</th><th style="width:90px">来源</th></tr></thead>
+    <tbody>${t.rows.map(r=>`<tr>
+      <td><b>${esc(r.品)}</b></td>
+      <td>${esc(r.型)}</td>
+      <td style="font-family:var(--fm);text-align:right">${r.q}</td>
+      <td style="color:var(--text3);font-size:11px">${esc(r.src)}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2"><b>合计</b></td>
+      <td style="font-family:var(--fm);text-align:right"><b>${t.totalP}</b></td>
+      <td style="color:var(--text3);font-size:11px">${t.totalN} 项</td></tr></tfoot>
+  </table></div>`;
+}
+function repaintGearTotal(){
+  const box=document.querySelector('[data-gear-total]');
+  if(!box) return;
+  const h=gearTotalHtml();
+  if(box.innerHTML===h) return;      /* 内容没变就不动 DOM，避免无谓重排 */
+  box.innerHTML=h;
+}
+/* 「? 汇总口径」按钮在 6.5 标题上，重绘不动它，无需重绑 */
+function updPower(){
+  if(D.s7._pwAuto===false) return;          // 用户已手改，不再自动覆盖
+  const t=totalW();
+  D.s7.总功率 = t?String(Math.round(t)):'';// 写回数据层
+  const el=document.querySelector('[data-p="7.总功率"]');
+  if(el) el.value = D.s7.总功率;
+}
+document.addEventListener('input',e=>{
+  const p=e.target.dataset.p; if(!p) return;
+  if(e.target.type==='radio'&&!e.target.checked) return;   // 单选：只响应选中项
+  const v=e.target.type==='checkbox'||e.target.type==='radio'
+    ? (e.target.type==='radio'?e.target.value:e.target.checked)
+    : e.target.value;
+  setByPath(p,v); save();
+  patchLive(e.target);
+  dispatchSync(p);          /* v1.7 §0↔§1 / §0↔§4 双向同步 */
+  updProg();
+});
+document.addEventListener('change',e=>{
+  const p=e.target.dataset.p; if(!p) return;
+  if(e.target.type==='radio'&&!e.target.checked) return;
+  const v=e.target.type==='radio'?e.target.value
+    : (e.target.type==='checkbox'?e.target.checked:e.target.value);
+  setByPath(p,v); save();
+  /* v1.7：原「§0.3 选场地库 → 带入地点」与「§0.7 选模特库 → 调出 §1 档案」两处联动
+     已随第四批需求 1（下线两个下拉）移除。
+     场地主数据源仍是 §4 场地库、模特主数据源仍是 §1 模特档案；
+     v1.7 起改为**双向同步**（dispatchSync），改哪边另一边都跟上。*/
+  dispatchSync(p);
+  if(e.target.type==='radio'||e.target.tagName==='SELECT') render(); else patchLive(e.target);
+  updProg();
+});
+
+/* 图片：点击 /拖拽 */
+document.addEventListener('click',async e=>{
+  const rm=e.target.closest('[data-rm]');
+  if(rm){ const id=rm.dataset.rm;
+    /* §4 场地参考图为数组：4.图.N → 删除第 N 张 */
+    const mv=id.match(/^4\.图\.(\d+)$/);
+    if(mv){ D.s4.图.splice(+mv[1],1); save(); render();
+      toast('已移除该图（剩余 '+D.s4.图.length+'/10）'); return; }
+    /* v1.5 §1 模特样图为数组：1.样图.N → 删除第 N 张 */
+    const ms=id.match(/^1\.样图\.(\d+)$/);
+    if(ms){ D.s1.样图=D.s1.样图||[]; D.s1.样图.splice(+ms[1],1); save(); render();
+      toast('已移除该图（剩余 '+D.s1.样图.length+'/2）'); return; }
+    /* v1.5 §5 道具参考图为数组：5.图.N → 删除第 N 张 */
+    const mp5=id.match(/^5\.图\.(\d+)$/);
+    if(mp5){ D.s5.图.splice(+mp5[1],1); save(); render();
+      toast('已移除该图（剩余 '+D.s5.图.length+'/8）'); return; }
+    /* v1.5 §11 参考样片为数组：11.样片.N → 删除第 N 张 */
+    const mp=id.match(/^11\.样片\.(\d+)$/);
+    if(mp){ D.s11.样片=D.s11.样片||[]; D.s11.样片.splice(+mp[1],1); save(); render();
+      toast('已移除该图（剩余 '+D.s11.样片.length+'/'+S11_MAX+'）'); return; }
+    setByPath(id,''); save(); render();
+    toast('已移除该图'); return; }
+  const pk=e.target.closest('[data-pick]');
+  if(pk&&!e.target.closest('[data-rm]')){ pk.querySelector('input').click(); return; }
+  const im=e.target.closest('.pick.filled img');
+  if(im){ $('#lb img').src=im.src; $('#lb').classList.add('on'); return; }
+
+  const add=e.target.closest('[data-add]');
+  if(add){ const k=add.dataset.add;
+    let blank;
+    if(k==='配饰')        blank={类:'',具:'',必:false,图:''};
+    else if(k==='服装')   blank={类:'',品:'',款:'',质:'',色:'',图:''};
+    else if(k==='灯位')   blank={灯位名:'辅光',方向:'',方向自定义:'',具:'',数:'',瓦:'',
+                                  电:'',控:'',控数:'',用:''};
+    else if(k==='道具')   blank={名:'',类:'拍摄道具',数:'1',备:''};
+    else if(k==='行程')   blank={时:'09:00',事:'',地:'',耗时:60,备:''};
+    else                  blank={类:'',品:'',款:'',质:'',色:'',图:''};
+    const arr=arrOf(k);
+    arr.push(blank); save(); render(); return; }
+
+  /* §8 行程安排（v1.7）：点甘特图上的关键节点 → 新增一个该阶段的行程行。
+     语义从「设为起点」改为「按典型时刻加一段」——关键节点本身就是排期的骨架，
+     点一下就能把骨架搭出来，比反复手打时间快得多。
+     若已有同一事项的行，则改为把该行时间对齐到这个节点。 */
+  const slot=e.target.closest('[data-slot]');
+  if(slot){
+    const k=slot.dataset.slot;
+    const s=slotSet().find(x=>x.k===k); if(!s) return;   /* v1.0.11: S8_SLOTS 已改为 slotSet() 函数 */
+    const exist=(D.s8.行||[]).findIndex(r=>r.事===k);
+    if(exist>=0){
+      /* v1.9 需求4：轴上时刻已跟随 8.2 表格，所以此处不能再用 s.t 覆盖
+         （那等于把用户刚填的时间冲回典型值）。改为定位 + 高亮该行，
+         让「点轴 → 找到对应行程」这条路径有明确反馈。 */
+      save(); render();
+      flashRow(exist);
+      toast('已定位到 8.2 第'+(exist+1)+'行「'+k+'」· '
+        +slotActual(k)+'（轴上时刻与该行已联动）'); return; }
+    const last=(D.s8.行||[]).length
+      ? Math.max(...(D.s8.行||[]).map(r=>{
+          const m=t2m(r.时); return m==null?0:m+(+r.耗时||0); }))
+      : t2m(s.t);
+    const start=Math.max(last,t2m(s.t));
+    const ni=D.s8.行.push({时:m2t(start),事:k,地:'',耗时:60,备:s.tip})-1;
+    save(); render();
+    flashRow(ni);
+    toast('已添加「'+k+'」'+(start===t2m(s.t)?s.t:m2t(start))
+      +' 起 · 默认 60 分钟，可在 8.2 调整（时段轴已同步）');
+    return; }
+
+  /* §6 器材四表：新增行（data-addge="器材|滤镜|灯|附件"） */
+  const addge=e.target.closest('[data-addge]');
+  if(addge){ const k=addge.dataset.addge;
+    D.s6[k].push({品:'',型:'',数:'1',备:''});
+    save(); render();
+    toast('已添加一行'); return; }
+  /* §6.5 器材总表（v1.9）：已改为只读自动聚合，无需「生成」——
+     6.1–6.4 任一改动都会即时反映到总表。这里只保留一个说明性按钮，
+     点击给出汇总口径说明，不再往D 里写第二份数据。 */
+  if(e.target.id==='genGear'){
+    const {stat,totalN,totalP}=gearSummary();
+    if(!totalN){ toast('6.1–6.4 还没有有效条目，总表暂为空'); return; }
+    toast('器材总表（6.5）由 6.1–6.4 自动聚合，无需手动生成。\n'
+      +'当前：'+totalN+' 项 / '+totalP+' 件\n'
+      +stat.filter(x=>x.n).map(x=>'· '+x.label+' '+x.n+' 项').join('\n')
+      +'\n\n合并规则：同一张表内「品类+型号」相同的行合并数量；跨表不合并。');
+    return; }
+
+  /* §6 器材四表：删除行（data-delge="器材.0"） */
+  const delge=e.target.closest('[data-delge]');
+  if(delge){ const [k,i]=delge.dataset.delge.split('.');
+    D.s6[k].splice(+i,1); save(); render();
+    toast('已删除该行'); return; }
+
+  const delrow=e.target.closest('[data-delrow]');
+  if(delrow){ const k=delrow.dataset.delrow;
+    const arr=arrOf(k);
+    if(arr.length>1){ arr.pop(); save(); render();
+      toast('已删除末行'); } return; }
+
+  const del=e.target.closest('[data-del]');
+  if(del){ const [k,i]=del.dataset.del.split('.');
+    const arr=arrOf(k);
+    if(arr.length<=1){ toast('至少保留一行'); return; }
+    arr.splice(i,1); save(); render();
+    toast('已删除该行'); return; }
+
+  /* §0.3 / §0.7 摘要卡上的「前往 §4 / §1 编辑」跳转（v1.7 随同步卡一同恢复） */
+  if(e.target.id==='toV1'){ $('#sec-1').scrollIntoView({behavior:'smooth'}); return; }
+  if(e.target.id==='toV4'){ $('#sec-4').scrollIntoView({behavior:'smooth'}); return; }
+
+  /* ---- 模特库 ---- */
+  if(e.target.id==='saveModel'){
+    if(REQ(D.s1.姓名)){ toast('请先填写模特姓名'); $('#sec-1').scrollIntoView({behavior:'smooth'}); return; }
+    const i=MODELS.findIndex(x=>x.姓名===D.s1.姓名);
+    const rec={姓名:D.s1.姓名, 身高:D.s1.身高, 体重:D.s1.体重,
+               样图:[...(D.s1.样图||[])], 备注:D.s1.备注,
+               updatedAt:new Date().toISOString()};
+    if(i>=0){ rec.createdAt=MODELS[i].createdAt; MODELS[i]=rec;
+      toast('已更新模特库中的「'+rec.姓名+'」'); }
+    else { rec.createdAt=rec.updatedAt; MODELS.push(rec);
+      toast('已存入模特库（'+MODELS.length+' 位）· 之后可在 §1 档案中选用'); }
+    saveModels(); save(); syncModelDown(); render(); return;
+  }
+  const mload=e.target.closest('[data-mload]');
+  if(mload){ const m=MODELS.find(x=>x.姓名===mload.dataset.mload); if(!m) return;
+    Object.assign(D.s1,{姓名:m.姓名,身高:m.身高,体重:m.体重,
+      样图:[...(m.样图||[])],备注:m.备注});
+    syncModelDown(); save(); render();
+    toast('已调入模特「'+m.姓名+'」的档案，§0.7 摘要已同步'); return; }
+  const mdel=e.target.closest('[data-mdel]');
+  if(mdel){ const n=mdel.dataset.mdel;
+    if(!confirm('从模特库移除「'+n+'」？\n本策划案已填内容不受影响。')) return;
+    MODELS=MODELS.filter(x=>x.姓名!==n); saveModels(); render();
+    toast('已从模特库移除'); return; }
+  if(e.target.id==='csvModels'){ exportCSV('models'); return; }
+  if(e.target.id==='toFeishu'){ feishuStub('模特信息表'); return; }
+
+  /* ---- 场地库 ---- */
+  if(e.target.id==='saveVenue'){
+    if(REQ(D.s4.名称)){ toast('请先填写场地名称'); $('#sec-4').scrollIntoView({behavior:'smooth'}); return; }
+    const id=D.s4.场地Id||('VD'+String(++_venueSeq).padStart(3,'0'));
+    const i=VENUES.findIndex(x=>x.id===id);
+    const rec={id, 名称:D.s4.名称, 所在区:D.s4.所在区,
+               适配风格:D.s4.适配风格, 时效性:D.s4.时效性, 门票:D.s4.门票,
+               简述:D.s4.简述, 图:[...(D.s4.图||[])], 备注:D.s4.备注,
+               updatedAt:new Date().toISOString()};
+    if(i>=0){ rec.createdAt=VENUES[i].createdAt; VENUES[i]=rec;
+      toast('已更新场地库中的「'+rec.名称+'」'); }
+    else { rec.createdAt=rec.updatedAt; VENUES.push(rec);
+      toast('已存入场地库（'+VENUES.length+' 处）· 可在 §0.3 选用'); }
+    D.s4.场地Id=id; saveVenues(); save(); syncVenueDown(); render(); return;
+  }
+  const vload=e.target.closest('[data-vload]');
+  if(vload){ const v=VENUES.find(x=>x.id===vload.dataset.vload); if(!v) return;
+    Object.assign(D.s4,{场地Id:v.id,名称:v.名称,所在区:v.所在区,
+      适配风格:v.适配风格,时效性:v.时效性,门票:v.门票,简述:v.简述,
+      图:[...(v.图||[])],备注:v.备注||''});
+    /* v1.7：调入场地库记录 → §4 档案 + §0.3 双向同步（不再手写 D.s0 两处） */
+    syncVenueDown(); save(); render();
+    toast('已调入场地「'+v.名称+'」并同步到 §0.3 拍摄地点'); return; }
+  const vdel=e.target.closest('[data-vdel]');
+  if(vdel){ const id=vdel.dataset.vdel, v=VENUES.find(x=>x.id===id);
+    if(!confirm('从场地库移除「'+(v?v.名称:id)+'」？\n本策划案已填内容不受影响。')) return;
+    VENUES=VENUES.filter(x=>x.id!==id); saveVenues(); render();
+    toast('已从场地库移除'); return; }
+  if(e.target.id==='csvVenues'){ exportCSV('venues'); return; }
+  if(e.target.id==='toFeishuV'){ feishuStub('拍摄场地表'); return; }
+
+  /* 编号分配 */
+  if(e.target.id==='allocBtn'){
+    const base=D.s0.撰写日期||D.s0.拍摄日期||'';
+    if(D.s0.编号){
+      const m=String(D.s0.编号).match(/^(CX-\d{8})-(\d+)$/);
+      if(!confirm('重新分配将释放当前编号 '+D.s0.编号+'，确定？')) return;
+      if(m) AUTO_NO.release(m[1], +m[2]);
+      D.s0.编号='';
+    }
+    const x=AUTO_NO.next(base);
+    D.s0.编号=x.no; AUTO_NO.reserve(x.key,x.seq);
+    save(); render();
+    toast('已分配策划案编号 '+x.no+'\n归档目录：'+folderName()+'\n文件名：'+archiveName());
+    return;
+  }
+});
+/* 行数组统一取用入口 */
+function arrOf(k){
+  if(k==='配饰') return D.s2.配饰[0];
+  if(k==='灯位') return D.s7.灯位[0];
+  if(k==='道具') return D.s5.道具;   /* v1.5 §5 道具清单 */
+  if(k==='行程') return D.s8.行;      /* v1.6 §7 timetable 行数组 */
+  /* v1.5 §6 摄影器材四子表（器材/滤镜/灯/附件） */
+  if(['器材','滤镜','灯','附件'].includes(k)) return D.s6[k];
+  return D.s2[k];
+}
+/* ---- 预留接口：CSV 落盘 + 飞书多维表格同步（v1 不实现，见 04 调研报告）---- */
+const CSV_SCHEMAS={
+  models:{ file:'模特信息表.csv', cols:['姓名','身高(cm)','体重(kg)','体格特征','样图','更新时间'] },
+  venues:{ file:'拍摄场地表.csv', cols:['编号','场地名称','所在区','适配风格',
+    '是否时效性','门票(元)','场地简述','参考图数','更新时间'] }
+};
+function exportCSV(which){
+  /* 接口占位：v1 走「下载全量 CSV」；v2 可换 File System Access 自动追加。
+     技术路径与可行性见 04-资料库同步可行性调研.md */
+  const S=CSV_SCHEMAS[which];
+  const rows=which==='models'
+    ? MODELS.map(m=>[m.姓名,m.身高,m.体重,m.备注,m.样图?'有':'无',(m.updatedAt||'').slice(0,10)])
+    : VENUES.map(v=>[v.id,v.名称,v.所在区,v.适配风格,v.时效性,v.门票,
+                     v.简述,(v.图||[]).length,(v.updatedAt||'').slice(0,10)]);
+  const q=c=>'"'+String(c??'').replace(/"/g,'""')+'"';
+  const csv='﻿'+[S.cols.map(q).join(','),...rows.map(r=>r.map(q).join(','))].join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=S.file; a.click(); URL.revokeObjectURL(a.href);
+  toast('已导出 '+S.file+'（'+rows.length+' 条记录）\n追加新记录后请重新导出并覆盖');
+}
+function uploadToFeishu(tableName,rows){
+  /* 接口占位：v2 实现。需先解决 CORS 与凭据保管问题，详见 04 调研报告 */
+  throw new Error('飞书同步尚未实现：需先完成 CORS 可行性验证与凭据保管方案');
+}
+function feishuStub(tableName){
+  alert('「同步到'+tableName+'」为v2 预留接口，当前版本不实现。\n\n'+
+    '待解决的前置问题（详见 04-资料库同步可行性调研.md）：\n'+
+    '1. 浏览器直连 open.feishu.cn 是否被 CORS 拦截\n'+
+    '2. app_secret 等凭据如何保管（明文存 localStorage 有泄漏风险）\n'+
+    '3. 附件字段的图片上传链路\n\n'+
+    '当前数据安全存于浏览器 localStorage，不会丢失。');
+}
+
+document.addEventListener('change',async e=>{
+  const fi=e.target.dataset.fi; if(!fi) return;
+  /* §4 场地参考图为多图槽：一次可传多张 */
+  if(fi==='4.图.add'){
+    const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+    if(!files.length){ e.target.value=''; return; }
+    const room=10-(D.s4.图||[]).length;
+    if(files.length>room) toast('最多 10 张，已保留前 '+room+' 张');
+    let added=0, lastKB=0, blocked=false;
+    for(const f of files.slice(0,room)){
+      const r=await shrink(f);
+      ASSETS['4.图.'+D.s4.图.length]={mime:'image/jpeg',w:r.w,h:r.h,size:r.size,
+        uploadedAt:new Date().toISOString()};
+      D.s4.图.push(r.url);
+      lastKB=Math.round(r.size/1024);
+      /* 每张都存一次并检查结果——批量上传最容易撞配额，
+         若中途失败必须立刻停，不能让后面几张白压 */
+      if(!save()){ blocked=true; break; }
+      added++;
+    }
+    render(); e.target.value='';
+    toast(blocked
+      ? '⚠️ 存储已满，只加进 '+added+' 张（共 '+D.s4.图.length+'/10）\n'
+        +'单张约 '+lastKB+' KB。请「导出整案」备份后删减已有图片。'
+      : '已添加 '+added+' 张场地参考图（'+D.s4.图.length+'/10）\n单张约 '+lastKB+' KB');
+    return;
+  }
+  /* v1.5 §1 模特样图：定槽上传（1-2 张），一次可多选填补空槽 */
+  if(fi==='1.样图.add'){
+    D.s1.样图=D.s1.样图||[];
+    const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+    if(!files.length){ e.target.value=''; return; }
+    let n=0;
+    for(let i=0;i<2&&n<files.length;i++){
+      if(await setPickArr('1.样图',D.s1.样图,null,files[n++],2)) continue;
+    }
+    if(n<files.length) toast('模特样图最多 2 张，多余的已忽略');
+    save(); render(); e.target.value='';
+    toast('已添加模特样图（'+D.s1.样图.length+'/2）'); return;
+  }
+  /* v1.5 数组槽定槽替换（如 1.样图.0） */
+  const mArr=fi.match(/^(1\.样图)\.(\d+)$/);
+  if(mArr){
+    D.s1.样图=D.s1.样图||[];
+    await setPickArr(mArr[1],D.s1.样图,+mArr[2],e.target.files[0],2);
+    save(); render(); e.target.value=''; return;
+  }
+  /* v1.5 §5 道具参考图：一次可多选，追加到末尾 */
+  if(fi==='5.图.add'){
+    D.s5.图=D.s5.图||[];
+    const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+    for(const f of files){ if(!await setPickArr('5.图',D.s5.图,null,f,8)) break; }
+    save(); render(); e.target.value='';
+    toast('已添加道具参考图（'+D.s5.图.length+'/8）'); return;
+  }
+  const m5=fi.match(/^5\.图\.(\d+)$/);
+  if(m5){ D.s5.图=D.s5.图||[];
+    await setPickArr('5.图',D.s5.图,+m5[1],e.target.files[0],8);
+    save(); render(); e.target.value=''; return; }
+  /* v1.5 §11 参考样片：一次可多选，追加到末尾，上限 25 张 */
+  if(fi==='11.样片.add'){
+    D.s11.样片=D.s11.样片||[];
+    const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+    for(const f of files){ if(!await setPickArr('11.样片',D.s11.样片,null,f,S11_MAX)) break; }
+    save(); render(); e.target.value='';
+    const n=D.s11.样片.length;
+    toast(n>=S11_MAX ? '已达上限 '+S11_MAX+' 张'
+        : '已添加参考样片（'+n+'/'+S11_MAX+'）'+
+          (n<S11_MIN?'，还差 '+(S11_MIN-n)+' 张才达建议下限':'')); return;
+  }
+  const m11=fi.match(/^11\.样片\.(\d+)$/);
+  if(m11){ D.s11.样片=D.s11.样片||[];
+    await setPickArr('11.样片',D.s11.样片,+m11[1],e.target.files[0],S11_MAX);
+    save(); render(); e.target.value=''; return; }
+  await setPick(fi,e.target.files[0]); e.target.value='';
+});
+document.addEventListener('dragover',e=>{
+  const dz=e.target.closest('[data-dz]');
+  if(dz){ e.preventDefault(); dz.classList.add('drop'); }
+});
+document.addEventListener('dragleave',e=>{
+  const dz=e.target.closest('[data-dz]'); if(dz) dz.classList.remove('drop');
+});
+document.addEventListener('drop',async e=>{
+  const dz=e.target.closest('[data-dz]');
+  if(!dz) return;
+  e.preventDefault(); dz.classList.remove('drop');
+  await setPick(dz.dataset.dz, e.dataTransfer.files[0]);
+});
+
+/* 灯箱 */
+$('#lb').addEventListener('click',()=>$('#lb').classList.remove('on'));
+
+/* 模式 / 主题 / 纸张 */
+$('#modeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  document.body.dataset.mode=b.dataset.m; D.meta.mode=b.dataset.m; save();
+});
+document.querySelectorAll('#modeSeg button').forEach(b=>{
+  if(D.meta.mode===b.dataset.m) b.classList.toggle('on',true);
+});
+function setTheme(t){
+  document.documentElement.dataset.theme=t;
+  $('#tBtn').textContent = t==='light'?'☾ 暗色':'☀ 浅色';
+  D.meta.theme=t; lsSet(LS,JSON.stringify(D));
+}
+$('#tBtn').addEventListener('click',()=>
+  setTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
+setTheme(D.meta.theme||'light');
+
+$('#paper').addEventListener('change',e=>{
+  const s=document.createElement('style');
+  s.textContent=`@page{size:${e.target.value}}`;
+  s.id='pgstyle'; document.getElementById('pgstyle')?.remove(); document.head.appendChild(s);
+});
+
+/* 导出 */
+function missing(){
+  const done=doneSet();
+  return reqList().filter(([s,k])=>!done.has(s+'-'+k));
+}
+function gate(act){
+  const m=missing();
+  if(!m.length) return act();
+  $('#mN').textContent=m.length;
+  $('#mList').innerHTML=m.map(x=>`<div>· <b>${esc(x[2])}</b></div>`).join('');
+  $('#modal').classList.add('on');
+  $('#mGo').onclick=()=>{ $('#modal').classList.remove('on'); act(); };
+  $('#mCancel').onclick=()=>$('#modal').classList.remove('on');
+}
+/* 归档建议：编号即主键，贯穿目录名 / 文件名 / 台账行 / data.json */
+function archiveName(ext){
+  const no=D.s0.编号||'CX-未分配';
+  const theme=D.s0.拍摄主题||'题材名';
+  return no+' '+theme+' v'+(D.s0.版本||'1.0')+(ext?'.'+ext:'');
+}
+function folderName(){
+  const no=D.s0.编号||'CX-未分配';
+  const theme=D.s0.拍摄主题||'题材名';
+  return no+' '+theme+'策划案N';
+}
+$('#pdfBtn').addEventListener('click',()=>gate(()=>{ window.print(); }));
+/* ==========================================================================
+   整案导出 / 导入（数据备份与跨设备转移）
+   --------------------------------------------------------------------------
+   为什么必须有这个：顶栏的「打印 / 存PDF」产出的是**排版好的成品**，
+   拿到手是一份死文档，**不能恢复数据**。而数据在本机 localStorage，
+   换设备等于重填。本功能导出的 .json 才能原样恢复。
+   ========================================================================== */
+const EXP_FORMAT='sw-workbench';   /* 格式标识：用于将来识别不同版本 */
+function exportAll(){
+  const payload={ format:EXP_FORMAT, version:'1.1.0',
+    exportedAt:new Date().toISOString(),
+    doc:D, models:MODELS, venues:VENUES, usedno:AUTO_NO.used };
+  const stamp=new Date(), p=n=>String(n).padStart(2,'0');
+  const name=(D.s0.编号||'未分配').replace(/[^\w-]/g,'');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,1)],
+    {type:'application/json'}));
+  a.download=`${name}_工作台备份_${stamp.getFullYear()}${p(stamp.getMonth()+1)}${p(stamp.getDate())}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('已导出整案备份\n含：12 章节内容 + 模特库 + 场地库 + 编号占用表\n'
+      +'换设备时用「导入整案」恢复');
+}
+async function importAll(file){
+  if(!file) return;
+  let obj;
+  try{ obj=JSON.parse(await file.text()); }
+  catch(err){
+    toast('导入失败：文件不是有效的 JSON\n'
+      +'请确认选的是本工具导出的 .json 备份文件'); return; }
+  if(!obj || obj.format!==EXP_FORMAT || !obj.doc){
+    toast('导入失败：这不是本工作台的备份文件\n'
+      +'（缺少 format="'+EXP_FORMAT+'" 标识）'); return; }
+  /* 导入前先确认——会覆盖当前所有已填内容，不可撤销 */
+  const nModel=(obj.models||[]).length, nVenue=(obj.venues||[]).length;
+  if(!confirm('确定导入这份备份？\n\n'
+    +'策划案编号：'+(obj.doc.s0?.编号||'未分配')+'\n'
+    +'拍摄主题：'+(obj.doc.s0?.拍摄主题||'未填')+'\n'
+    +'模特库：'+nModel+' 位· 场地库：'+nVenue+' 处\n'
+    +'导出时间：'+(obj.exportedAt||'未知').slice(0,16).replace('T',' ')+'\n\n'
+    +'⚠️ 当前未导出的内容将被覆盖，且无法撤销。')) return;
+  try{
+    D=obj.doc;
+    MODELS=Array.isArray(obj.models)?obj.models:[];
+    VENUES=Array.isArray(obj.venues)?obj.venues:[];
+    if(obj.usedno && typeof obj.usedno==='object') AUTO_NO.used=obj.usedno;
+    /* 场馆库的自增序号需按导入内容重算，否则新建场地会与已有 id 撞号 */
+    _venueSeq=VENUES.reduce((m,v)=>Math.max(m,+String(v.id).replace(/\D/g,'')||0),0);
+    save(); saveModels(); saveVenues();
+    location.reload();   /* 重载确保所有模块拿到新数据 */
+  }catch(err){
+    toast('导入失败：数据格式异常\n'+err.message); }
+}
+$('#docxBtn').addEventListener('click',()=>gate(()=>toast(
+  'DOCX 导出尚未实现\n\n'
+  +'技术选型已完成：GitHub 上唯一全项过关的方案是 dolanmiu/docx，\n'
+  +'但它约 1.24 MB，内联进单文件会让体积涨到 1.3 MB+，与「单文件轻量」的取舍冲突。\n\n'
+  +'当前替代方案：顶栏「打印 / 存 PDF」→ 目标选「另存为 PDF」。')));
+/* 「导出整案」是**备份**行为，不经过 gate() 的必填校验——
+   恰恰相反，用户正是因为「东西填错了/填一半」才想备份。
+   同理「导入整案」也不拦：导入的是完整数据，拦它没意义。
+   只有「打印 / 存 PDF」与「导出 DOCX」属于交付成品，才需要 gate 拦截。 */
+$('#expBtn').addEventListener('click',exportAll);
+$('#impBtn').addEventListener('click',()=>$('#impFile').click());
+$('#impFile').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  await importAll(f);
+});
+$('#clrBtn').addEventListener('click',()=>{
+  if(!confirm('清空全部已填数据？此操作不可撤销。\n\n'
+    +'建议先点「导出整案」做备份，再清空。')) return;
+  localStorage.removeItem(LS); location.reload();
+});
+
+/* 导航高亮 + 拖拽排序
+   v1.7：同时观察「章节 section」与「子节锚点[id^=anc-]」，
+   滚动到哪一节，导航就高亮哪一条并自动展开对应章节。
+   v1.8 修复：原来只在 setTimeout(0) 里绑定一次，但 render() 会重建 #main
+   整棵子树，observer 持有的仍是已销毁的旧节点 → 回调永远不再触发，
+   蓝色标签就一直是「0. 基本信息」。改为：
+     ① 提供 ioRebind()，在每次 render() 后重新observe；
+     ② 额外挂scroll 兜底（rAF节流），即便 observer 漏事件也能纠正高亮。 */
+function _setCur(id){
+  if(id.startsWith('anc-')){
+    const sid=id.slice(4).replace(/-(\d+)$/,'');
+    cur=sid; curSub=id.slice(4);
+  } else {
+    cur=id.replace('sec-','');
+    const sec=SECS.find(x=>x.id===cur);
+    if(sec&&sec.subs&&sec.subs.length) curSub=sec.subs[0][0];
+  }
+  navRender();
+}
+const io=new IntersectionObserver(es=>{
+  /*只取当前真正处于顶部判定带内的那个，避免批量回调时顺序错乱。
+     排序键用 top 的绝对值：越接近判定线（top≈110px）越优先。
+     v1.8：页面滚到底部时 io 的判定带（-78% 下边距）覆盖不到末节，
+     会把高亮打回上一节 —— 此时直接跳过，交给 _scrollPick 兜底。 */
+  const maxY=document.documentElement.scrollHeight-window.innerHeight;
+  if(window.scrollY>=maxY-4) return;
+  const hit=es.filter(e=>e.isIntersecting)
+    .sort((a,b)=>Math.abs(a.boundingClientRect.top-110)
+                  -Math.abs(b.boundingClientRect.top-110))[0];
+  if(hit) _setCur(hit.target.id);
+},{rootMargin:'-110px 0px -78% 0px',threshold:0});
+function ioRebind(){
+  io.disconnect();
+  document.querySelectorAll('main section.sec').forEach(s=>io.observe(s));
+  document.querySelectorAll('[id^="anc-"]').forEach(s=>io.observe(s));
+}
+/* 滚动兜底：取视口顶部判定线（top+110px）上方最近的章节 / 子节。
+   判定线贴近视口顶端：若放太靠下（曾用 28% 视口高），scrollIntoView()
+   刚把目标章节顶到屏幕上时它还在判定线下方，导航会显示上一节。
+   110px 略大于顶部工具条高度，保证「点导航跳过去」时高亮已经跟上。*/
+let _rafPending=false;
+function _scrollPick(){
+  _rafPending=false;
+  /* 用 getBoundingClientRect 而非 offsetTop：offsetTop 相对 offsetParent，
+     祖先若有定位/变换会算错位置。
+     判定线 line：默认距视口顶部 110px（略大于顶部工具条高度）。
+     但若已滚到底部，页面无法再滚，最后一节永远到不了判定线 →
+     此时把判定线下移到视口底部，保证末节能被点亮。 */
+  let line=110;
+  const maxY=document.documentElement.scrollHeight-window.innerHeight;
+  if(window.scrollY>=maxY-4){
+    line=Math.max(110, window.innerHeight-8);
+  }
+  const secs=[...document.querySelectorAll('main section.sec')]
+    .filter(s=>s.getBoundingClientRect().top<=line);
+  const sec=secs.length?secs[secs.length-1]:null;
+  if(!sec) return;
+  const sid=sec.id.replace('sec-','');
+  const anc=[...sec.querySelectorAll('[id^="anc-"]')]
+    .filter(a=>a.getBoundingClientRect().top<=line);
+  const sub=anc.length?anc[anc.length-1].id.replace('anc-',''):null;
+  if(sid===cur&&sub===curSub) return;
+  cur=sid;
+  if(sub) curSub=sub;
+  else{ const s2=SECS.find(x=>x.id===sid);
+        if(s2&&s2.subs&&s2.subs.length) curSub=s2.subs[0][0]; }
+  navRender();
+}
+window.addEventListener('scroll',()=>{
+  if(_rafPending) return;
+  _rafPending=true;
+  requestAnimationFrame(_scrollPick);
+},{passive:true});
+/* 章节展开/收起（v1.7）—— 点箭头手动折叠，openSec 有值后不再自动展开 */
+document.addEventListener('click',e=>{
+  const f=e.target.closest('[data-fold]'); if(!f) return;
+  const id=f.dataset.fold;
+  const sec=SECS.find(x=>x.id===id); if(!sec) return;
+  const isOpenNow=openSec.size?openSec.has(id)
+    :(curSub.startsWith(id+'-'));
+  if(isOpenNow) openSec.delete(id); else openSec.add(id);
+  navRender();
+});
+document.addEventListener('DOMContentLoaded',()=>{ syncVersion(); render(); });
+
+let dragK=null,dragI=null;
+document.addEventListener('dragstart',e=>{
+  const tr=e.target.closest('[data-row]'); if(!tr) return;
+  const[k,i]=tr.dataset.row.split('.'); dragK=k; dragI=+i; tr.classList.add('dragging');
+});
+document.addEventListener('dragend',e=>{
+  document.querySelectorAll('tr').forEach(x=>x.classList.remove('dragging','over'));
+});
+document.addEventListener('dragover',e=>{
+  const tr=e.target.closest('[data-row]'); if(!tr||dragK===null) return;
+  if(tr.dataset.row.split('.')[0]!==dragK) return;
+  e.preventDefault(); tr.classList.add('over');
+});
+document.addEventListener('drop',e=>{
+  const tr=e.target.closest('[data-row]');
+  if(!tr||dragK===null) return;
+  const[k,i]=tr.dataset.row.split('.');
+  if(k!==dragK||+i===dragI){ dragK=null; return; }
+  const arr=(k==='配饰'?D.s2.配饰[0]:k==='灯位'?D.s7.灯位[0]:D.s2[k]);
+  const [m]=arr.splice(dragI,1); arr.splice(+i,0,m);
+  dragK=null; save(); render();
+});
+
+/* toast */
+let tT;
+function toast(msg){
+  let el=document.getElementById('toast');
+  if(!el){ el=document.createElement('div'); el.id='toast';
+    el.style.cssText='position:fixed;bottom:26px;left:50%;transform:translateX(-50%);'
+      +'background:var(--panel);border:1px solid var(--border);border-radius:10px;'
+      +'padding:12px 20px;font-size:13px;box-shadow:var(--sh);z-index:9999;max-width:80vw;'
+      +'white-space:pre-line;color:var(--text)';
+    document.body.appendChild(el); }
+  el.textContent=msg; el.style.display='block';
+  clearTimeout(tT); tT=setTimeout(()=>el.style.display='none',3800);
+}
+
+/* ==========================================================================
+   v1.0.12 兜底：首绘哨兵 + 白屏可读提示
+   --------------------------------------------------------------------------
+   有了 §0 的存储安全层，已知的白屏根因已消除。但本脚本是一整段顶层
+   <script>，**任何**未预期的顶层异常仍会导致「导航空、主体白」的无声失败。
+   与其让用户对着白屏发呆，不如主动判断并给出一条能自救的提示。
+
+   机制：DOMContentLoaded 后给首绘一次机会（下一帧检查）。
+   若 window.__booted 仍为 false → 页面上渲染一块故障面板：
+     · 说明「数据可能损坏，工具已尝试自动修复」
+     · 提供「清空本地数据并重启」按钮（走 lsPurgeAll + reload）
+     · 提供「导出诊断信息」按钮，便于把 console 错误发来排查
+   ========================================================================== */
+window.addEventListener('error', function(ev){
+  try {
+    if (window.console && console.error) {
+      console.error('[boot] 未捕获异常：', ev && (ev.message || ev.error));
+    }
+  } catch (e) {}
+});
+
+window.addEventListener('DOMContentLoaded', function(){
+  /* 让 page 首绘（同事件里注册的 render）先跑完，再判断 */
+  setTimeout(function(){
+    if (window.__booted) return;          // 首绘成功，正常路径
+    showBootFailure();
+  }, 400);
+});
+
+function showBootFailure(){
+  if (document.getElementById('__boot_fail')) return;
+  var box = document.createElement('div');
+  box.id = '__boot_fail';
+  box.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;'
+    + 'align-items:center;justify-content:center;background:#f6f7f9;'
+    + 'font:14px/1.7 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:#222;padding:24px';
+  var card = document.createElement('div');
+  card.style.cssText = 'max-width:520px;background:#fff;border:1px solid #e3e6ea;'
+    + 'border-radius:12px;padding:24px 26px;box-shadow:0 8px 30px rgba(0,0,0,.08)';
+  card.innerHTML =
+      '<h2 style="margin:0 0 10px;font-size:17px">⚠ 工具未能正常启动</h2>'
+    + '<p style="margin:0 0 8px">多半是本机缓存的<b>数据损坏</b>，或浏览器<b>禁用了本地存储</b>'
+    + '（无痕模式 / 站点策略），导致脚本启动中断。</p>'
+    + '<p style="margin:0 0 16px;color:#666">已缓存的策划案会随清理一并删除，'
+    + '清空前请确认没有未导出的重要内容。</p>';
+  var b1 = document.createElement('button');
+  b1.textContent = '清空本地数据并重启';
+  b1.style.cssText = 'background:#2563eb;color:#fff;border:0;border-radius:8px;'
+    + 'padding:10px 16px;font-size:14px;cursor:pointer;margin-right:10px';
+  b1.onclick = function(){
+    try { lsPurgeAll(); } catch (e) {}
+    try { location.reload(); } catch (e) { location.href = location.href; }
+  };
+  var b2 = document.createElement('button');
+  b2.textContent = '导出诊断信息';
+  b2.style.cssText = 'background:#fff;color:#222;border:1px solid #d5d9de;border-radius:8px;'
+    + 'padding:10px 16px;font-size:14px;cursor:pointer';
+  b2.onclick = function(){
+    var lines = [];
+    lines.push('ver=' + (typeof APP_VER !== 'undefined' ? APP_VER : '?'));
+    lines.push('ua=' + navigator.userAgent);
+    lines.push('href=' + location.href);
+    lines.push('ls_ok=' + (LS_NS && LS_NS.ok));
+    try {
+      ['sw_doc_v01','sw_usedno','sw_models','sw_venues','sw_solar_override'].forEach(function(k){
+        var s = localStorage.getItem(k);
+        lines.push(k + ': ' + (s === null ? '(未设置)' : (s.length + ' 字符, 前80=' + s.slice(0,80))));
+      });
+    } catch (e) { lines.push('(localStorage 不可读: ' + e.message + ')'); }
+    var txt = lines.join('\n');
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.cssText = 'width:100%;height:120px;margin-top:14px;'
+      + 'font:12px/1.5 monospace;border:1px solid #d5d9de;border-radius:6px;padding:8px';
+    ta.readOnly = true;
+    card.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); b2.textContent = '已复制 ✓'; } catch (e) {}
+  };
+  card.appendChild(b1); card.appendChild(b2);
+  box.appendChild(card);
+  document.body.appendChild(box);
+}
+</script>
+</body>
+</html>
