@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>拍摄策划工作台 v1.0.9</title>
+<title>拍摄策划工作台 v1.0.10</title>
 <style>
 /* ============================================================
    主题注册表 —— 新增主题只需往这里加一组 token 值
@@ -458,7 +458,7 @@ body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
     <div>
       <div class="vt">
         <h1>拍摄策划工作台</h1>
-        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.9</span>
+        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.10</span>
       </div>
       <div class="sub">T1-1 模板 v3.0 · 12 节（编号 0–11）</div>
     </div>
@@ -717,7 +717,7 @@ const S8_SLOTS=[
       结果「原型 v0.1」被当成工具版本 —— 用户测试的线上版其实早已迭代过多轮，
       页面却还写着 v0.1，版本对不上。这是版本标注必须独立成徽章的原因。
    ========================================================================== */
-const APP_VER='v1.0.9', TPL_VER='v3.0';
+const APP_VER='v1.0.10', TPL_VER='v3.0';
 const LS_MODEL='sw_models', LS_VENUE='sw_venues';
 let MODELS = JSON.parse(localStorage.getItem(LS_MODEL)||'[]');   // [{姓名,身高,体重,样图,备注,createdAt,updatedAt}]
 let VENUES = JSON.parse(localStorage.getItem(LS_VENUE)||'[]');   // [{id,名称,所在区,适配风格,时效性,门票,简述,图:[],备注}]
@@ -753,7 +753,7 @@ const SECS = [
  {id:'0',  t:'0. 基本信息',  req:true,
   subs:[['0-1','0.1 立项标识'],['0-2','0.2 拍摄时间'],['0-3','0.3 拍摄地点'],
         ['0-4','0.4 拍摄主题'],['0-5','0.5 策划案分类'],
-        ['0-6','0.6 性质与收入'],['0-7','0.7 本案模特']]},
+        ['0-6','0.6 性质与收入'],['0-7','0.7 模特档案摘要']]},
  {id:'1',  t:'1. 模特',      req:true,
   subs:[['1-1','1.1 模特档案'],['1-2','1.2 模特库']]},
  {id:'2',  t:'2. 服装',      req:true,
@@ -1088,26 +1088,13 @@ function setPeer(path,val){
   syncMiss(el);
   return true;
 }
-/* 模特档案 → §0.7 本案模特（姓名是识别键，档案为准） */
+/* 模特档案 → §0.7 摘要卡（**单向**）
+   v1.0.10 变更：本函数原先是双向的（§0.7 → §1 反写），
+   随「§0.7 姓名输入框下线」改为单向 —— 模特资料只有 §1.1 一处可编辑，
+   避免两处可编辑框互相覆盖导致数据打架。
+   D.s0.模特 作为派生字段保留（导出 / CSV 仍在读它），由这里单向写入。 */
 function syncModelDown(){
   D.s0.模特 = D.s1.姓名||'';
-  setPeer('0.模特', D.s0.模特);
-}
-/* §0.7 → §1 档案（反写：用户在 §0.7 改了姓名，档案与模特库一并跟上） */
-function syncModelUp(){
-  const old=D.s1.姓名;
-  D.s1.姓名 = D.s0.模特||'';
-  if(old===D.s1.姓名) return;
-  setPeer('1.姓名', D.s1.姓名);
-  /* 模特库中存在旧姓名记录 → 同步改名，避免库里留下旧名 */
-  if(old){
-    const i=MODELS.findIndex(x=>x.姓名===old);
-    if(i>=0){
-      MODELS[i].姓名=D.s1.姓名;
-      MODELS[i].updatedAt=new Date().toISOString();
-      saveModels();
-    }
-  }
 }
 /* 场地档案 → §0.3 拍摄地点 */
 function syncVenueDown(){
@@ -1152,7 +1139,6 @@ function dispatchSync(path){
   }
   if(/^7\.行\.\d+\.(时|耗时|事)$/.test(path)){ render(); return; }
   if(path==='1.姓名')            { syncModelDown(); patchCards(); }
-  else if(path==='0.模特')       { syncModelUp();   patchCards(); }
   else if(path==='4.名称'||path==='4.所在区'){ syncVenueDown(); patchCards(); }
   else if(path==='0.地点'||path==='0.场地所在区'){ syncVenueUp(); patchCards(); }
   /* §1 其他字段（身高/体重/备注/样图数）变化 → §0.7 摘要卡跟着变 */
@@ -1227,10 +1213,11 @@ function sec0(){
   const no=D.s0.编号, other=D.s0.性质==='其他';
   return `<section class="sec" id="sec-0">
   ${secHead('0','基本信息',true)}
-  <div class="sec-d">拍摄策划案立项信息 · <b>14 项字段+ 只读编号</b>。
+  <div class="sec-d">拍摄策划案立项信息 · <b>13 项字段 + 只读编号</b>。
   策划案编号为只读自动分配，是本策划案在目录、台账、成片侧的<b>唯一主键</b>。
-  <br>📌 模特身体数据统一在 <b>§1</b> 管理、场地信息统一在 <b>§4</b> 管理；
-  本节 0.3 / 0.7 <b>只填当次的文字信息</b>，不再提供「从库选择」下拉，避免同一份数据散落两处。</div>
+  <br>📌 模特资料统一在 <b>§1</b> 管理、场地信息统一在 <b>§4</b> 管理；
+  本节的 <b>0.3 拍摄地点</b>与 <b>0.7 模特档案摘要</b>只是这两处的<b>只读回显</b>，
+  要改请到对应章节，避免同一份数据填两处、互相打架。</div>
 
   <h3 id="anc-0-1">0.1 立项标识</h3>
   <div class="grid g3">
@@ -1305,13 +1292,8 @@ function sec0(){
     ${fld('负责摄影师',D.s0.负责摄影师,'0.负责摄影师',{req:true,ph:'例：Jason'})}
   </div>
 
-  <h3 id="anc-0-7">0.7 本案模特<span class="rec" style="color:var(--accent)">联动 §1 模特档案</span></h3>
-  <div class="grid g2">
-    ${fld('本场模特姓名',D.s0.模特,'0.模特',{req:true,
-      ph:'例：林小雨',
-      hint:'与 §1.1「姓名」双向同步，改任一边另一边立即跟上'})}
-    <div id="cardM">${modelCard()}</div>
-  </div>
+  <h3 id="anc-0-7">0.7 模特档案摘要<span class="rec" style="color:var(--accent)">来自 §1.1 模特档案</span></h3>
+  <div id="cardM">${modelCard()}</div>
   </section>`;
 }
 
@@ -1342,11 +1324,11 @@ function modelCard(){
     <label>模特档案摘要</label>
     <div class="hint" style="border:1px dashed var(--border);border-radius:var(--r2);
       padding:11px 13px;background:var(--panel2)">
-      在上方填入姓名，或到 <b>§1 模特档案</b> 填写完整资料。<br>
-      §1 里的身高 / 体重 / 样图 / 体格特征会显示在这里。</div></div>`;
-  const src=mm?'（已存模特库）':'（仅本策划案）';
+      还没有模特资料。前往 <b>§1 模特档案</b> 填写姓名 / 身高 / 体重 / 样图，<br>
+      这里会自动汇总显示 —— <b>模特资料只需在 §1 填一次</b>，不必在本节重复录入。</div></div>`;
+  const src=mm?'已存模特库':'仅本策划案';
   return `<div class="f">
-    <label>模特档案摘要<span class="rec" style="color:var(--text3)">来自 §1.1 ${src}</span></label>
+    <label>模特档案摘要<span class="rec" style="color:var(--text3)">来自 §1.1 模特档案 · ${src} · 在 §1 编辑</span></label>
     <div class="syncbox" style="margin-top:0">
       <div class="syncbox-b">
         <span><b>${esc(m.姓名)}</b></span>
@@ -2793,8 +2775,8 @@ document.addEventListener('click',async e=>{
   if(mload){ const m=MODELS.find(x=>x.姓名===mload.dataset.mload); if(!m) return;
     Object.assign(D.s1,{姓名:m.姓名,身高:m.身高,体重:m.体重,
       样图:[...(m.样图||[])],备注:m.备注});
-    D.s0.模特=m.姓名; syncModelDown(); save(); render();
-    toast('已调入模特「'+m.姓名+'」的档案，并同步到 §0.7'); return; }
+    syncModelDown(); save(); render();
+    toast('已调入模特「'+m.姓名+'」的档案，§0.7 摘要已同步'); return; }
   const mdel=e.target.closest('[data-mdel]');
   if(mdel){ const n=mdel.dataset.mdel;
     if(!confirm('从模特库移除「'+n+'」？\n本策划案已填内容不受影响。')) return;
