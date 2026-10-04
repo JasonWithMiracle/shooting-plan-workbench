@@ -281,7 +281,9 @@ body[data-mode="check"] .pick .rm,
 body[data-mode="check"] #paper,
 body[data-mode="check"] #pdfBtn,
 body[data-mode="check"] #docxBtn,
-body[data-mode="check"] #zipBtn{display:none}
+body[data-mode="check"] #expBtn{display:none}
+/* 注：#impBtn（导入整案）在核对态**保留**——
+   核对往往正是「发现数据不对」的时刻，此时导入备份最有用。 */
 body[data-mode="check"] .ck input{pointer-events:auto}
 body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
   font-size:10px;color:var(--amber);font-weight:400}
@@ -339,9 +341,11 @@ body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
       <option value="A4 landscape">A4 横向</option>
     </select>
     <button class="btn" id="tBtn" title="仅切换 token 值，组件样式不变">☀ 浅色</button>
-    <button class="btn pri" id="pdfBtn">导出 PDF</button>
-    <button class="btn pri" id="docxBtn">导出 DOCX</button>
-    <button class="btn" id="zipBtn" title="原型阶段未接入 JSZip">导出 zip</button>
+    <button class="btn pri" id="pdfBtn" title="打开浏览器打印对话框，选「另存为 PDF」即得 PDF">打印 / 存 PDF</button>
+    <button class="btn" id="docxBtn" title="尚未实现：需内联 docx 库（约 1.24 MB）。v1.1 补齐">导出 DOCX（未实现）</button>
+    <button class="btn" id="expBtn" title="把本策划案全部内容存成 .json 文件，可换设备导入恢复">⇩ 导出整案</button>
+    <button class="btn" id="impBtn" title="从 .json 文件恢复整份策划案，会覆盖当前数据">⇧ 导入整案</button>
+    <input type="file" id="impFile" accept="application/json,.json" hidden>
   </div>
 </div></div>
 
@@ -2096,13 +2100,76 @@ function folderName(){
   return no+' '+theme+'策划案N';
 }
 $('#pdfBtn').addEventListener('click',()=>gate(()=>{ window.print(); }));
+/* ==========================================================================
+   整案导出 / 导入（数据备份与跨设备转移）
+   --------------------------------------------------------------------------
+   为什么必须有这个：顶栏的「打印 / 存PDF」产出的是**排版好的成品**，
+   拿到手是一份死文档，**不能恢复数据**。而数据在本机 localStorage，
+   换设备等于重填。本功能导出的 .json 才能原样恢复。
+   ========================================================================== */
+const EXP_FORMAT='sw-workbench';   /* 格式标识：用于将来识别不同版本 */
+function exportAll(){
+  const payload={ format:EXP_FORMAT, version:'1.0.0',
+    exportedAt:new Date().toISOString(),
+    doc:D, models:MODELS, venues:VENUES, usedno:AUTO_NO.used };
+  const stamp=new Date(), p=n=>String(n).padStart(2,'0');
+  const name=(D.s0.编号||'未分配').replace(/[^\w-]/g,'');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,1)],
+    {type:'application/json'}));
+  a.download=`${name}_工作台备份_${stamp.getFullYear()}${p(stamp.getMonth()+1)}${p(stamp.getDate())}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('已导出整案备份\n含：12 章节内容 + 模特库 + 场地库 + 编号占用表\n'
+      +'换设备时用「导入整案」恢复');
+}
+async function importAll(file){
+  if(!file) return;
+  let obj;
+  try{ obj=JSON.parse(await file.text()); }
+  catch(err){
+    toast('导入失败：文件不是有效的 JSON\n'
+      +'请确认选的是本工具导出的 .json 备份文件'); return; }
+  if(!obj || obj.format!==EXP_FORMAT || !obj.doc){
+    toast('导入失败：这不是本工作台的备份文件\n'
+      +'（缺少 format="'+EXP_FORMAT+'" 标识）'); return; }
+  /* 导入前先确认——会覆盖当前所有已填内容，不可撤销 */
+  const nModel=(obj.models||[]).length, nVenue=(obj.venues||[]).length;
+  if(!confirm('确定导入这份备份？\n\n'
+    +'策划案编号：'+(obj.doc.s0?.编号||'未分配')+'\n'
+    +'拍摄主题：'+(obj.doc.s0?.拍摄主题||'未填')+'\n'
+    +'模特库：'+nModel+' 位· 场地库：'+nVenue+' 处\n'
+    +'导出时间：'+(obj.exportedAt||'未知').slice(0,16).replace('T',' ')+'\n\n'
+    +'⚠️ 当前未导出的内容将被覆盖，且无法撤销。')) return;
+  try{
+    D=obj.doc;
+    MODELS=Array.isArray(obj.models)?obj.models:[];
+    VENUES=Array.isArray(obj.venues)?obj.venues:[];
+    if(obj.usedno && typeof obj.usedno==='object') AUTO_NO.used=obj.usedno;
+    /* 场馆库的自增序号需按导入内容重算，否则新建场地会与已有 id 撞号 */
+    _venueSeq=VENUES.reduce((m,v)=>Math.max(m,+String(v.id).replace(/\D/g,'')||0),0);
+    save(); saveModels(); saveVenues();
+    location.reload();   /* 重载确保所有模块拿到新数据 */
+  }catch(err){
+    toast('导入失败：数据格式异常\n'+err.message); }
+}
 $('#docxBtn').addEventListener('click',()=>gate(()=>toast(
-  '原型阶段未内联 docx 库（1.24MB）\nM3 接入 dolanmiu/docx 9.8.1')));
-$('#zipBtn').addEventListener('click',()=>gate(()=>toast(
-  '原型阶段未接入 JSZip\nM4 接入，命名以策划案编号为主键\n\n'
-  +'建议目录名：'+folderName()+'\n建议文件名：'+archiveName('pdf')+' / '+archiveName('docx'))));
+  'DOCX 导出尚未实现（v1.1 计划中）\n\n'
+  +'技术选型已完成：GitHub 上唯一全项过关的方案是 dolanmiu/docx，\n'
+  +'但它约 1.24 MB，内联进单文件会让体积涨到 1.3 MB+，与「单文件轻量」的取舍冲突。\n\n'
+  +'当前替代方案：顶栏「打印 / 存 PDF」→ 目标选「另存为 PDF」。')));
+/* 「导出整案」是**备份**行为，不经过 gate() 的必填校验——
+   恰恰相反，用户正是因为「东西填错了/填一半」才想备份。
+   同理「导入整案」也不拦：导入的是完整数据，拦它没意义。
+   只有「打印 / 存 PDF」与「导出 DOCX」属于交付成品，才需要 gate 拦截。 */
+$('#expBtn').addEventListener('click',exportAll);
+$('#impBtn').addEventListener('click',()=>$('#impFile').click());
+$('#impFile').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  await importAll(f);
+});
 $('#clrBtn').addEventListener('click',()=>{
-  if(!confirm('清空全部已填数据？此操作不可撤销。')) return;
+  if(!confirm('清空全部已填数据？此操作不可撤销。\n\n'
+    +'建议先点「导出整案」做备份，再清空。')) return;
   localStorage.removeItem(LS); location.reload();
 });
 
