@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>拍摄策划工作台 v1.0.10</title>
+<title>拍摄策划工作台 v1.0.11</title>
 <style>
 /* ============================================================
    主题注册表 —— 新增主题只需往这里加一组 token 值
@@ -264,9 +264,10 @@ tr.over td{box-shadow:inset 0 2px 0 var(--accent)}
    保证刻度是整数小时；最小跨度6 小时，避免只有一项时被拉得过度稀疏。*/
 .gt{margin:10px 0 4px;border:1px solid var(--border);border-radius:var(--r2);
   background:var(--panel);overflow:hidden;user-select:none}
-.gt-head{position:relative;height:42px;background:var(--panel2);
+.gt-head{position:relative;height:60px;background:var(--panel2);
   border-bottom:1px solid var(--border)}
-.gt-slotrow{position:absolute;left:0;right:0;top:25px;height:16px}
+/* v1.0.11：轴高 42→60px，容纳节点标签错位后的第二行 */
+.gt-slotrow{position:absolute;left:0;right:0;top:30px;height:30px}
 .gt-slotrow .gt-slot{display:none}
 .gt-tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--border);
   font-size:10px;color:var(--text3);font-family:var(--fm);padding-left:4px;
@@ -284,6 +285,10 @@ tr.over td{box-shadow:inset 0 2px 0 var(--accent)}
   background:transparent;border:none;cursor:pointer;padding:0 3px;border-radius:3px;
   font-family:inherit;transition:.14s;line-height:16px}
 .gt-slotlab:hover{opacity:1;background:var(--panel);box-shadow:0 1px 4px rgba(0,0,0,.14)}
+/* v1.0.11：标签错位时用的引线，从轴顶拉到被挤下来的那一行 */
+.gt-slotlab-lead{position:absolute;top:0;width:0;border-left:1px dashed currentColor;
+  opacity:.45;z-index:3;pointer-events:none}
+.gt-slotlab-lead{color:var(--text3)}
 /* v1.9 需求4：与 8.2 联动的节点标签加重 + 「参考」角标（未联动时才显示） */
 .gt-slotlab.linked{font-weight:700;opacity:1}
 .gt-slotlab .ref{font-style:normal;font-size:8.5px;opacity:.7;margin-left:2px;
@@ -297,7 +302,7 @@ tr.gt-linked .lnk-mark{font-weight:600}
   15%,60%{background:color-mix(in srgb,var(--accent) 18%,transparent)}}
 tr.flash td{animation:rowflash 1.4s ease-out}
 /* 拖拽时的对齐参考线 */
-.gt-guide{position:absolute;top:42px;bottom:0;width:0;border-left:1px dashed var(--accent);
+.gt-guide{position:absolute;top:60px;bottom:0;width:0;border-left:1px dashed var(--accent);
   opacity:.5;pointer-events:none;z-index:8;display:none}
 .gt-rows{position:relative}
 .gt-row{position:relative;height:34px;border-bottom:1px dashed var(--border)}
@@ -323,10 +328,30 @@ tr.flash td{animation:rowflash 1.4s ease-out}
   width:2px;height:11px;border-radius:1px;background:rgba(255,255,255,.75)}
 .gt-h.l{left:0} .gt-h.r{right:0}
 .gt-bar:hover .gt-h::after{background:#fff}
+/* v1.0.11：光影时刻（黄金/蓝调）手填覆盖区 */
+.solarbox{border:1px solid var(--border);border-left:3px solid #b8863f;
+  border-radius:0 var(--r2) var(--r2) 0;background:var(--panel2);
+  padding:11px 13px;margin:2px 0 10px}
+.solarbox-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  font-size:12.5px;margin-bottom:6px}
+.solarbox-h .tag{font-size:10.5px;color:var(--text2);background:var(--panel);
+  border:1px solid var(--border);border-radius:20px;padding:1px 8px}
+.solarbox-h .tag-warn{color:var(--amber);border-color:var(--amber);background:rgba(184,117,20,.08)}
+.solarbox-n{font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:9px}
+.solarbox-n a{color:var(--accent)}
+.solarbox-g{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.solarbox-g .f label{font-size:11.5px}
+.solarbox-g .f .hint{margin-top:2px}
+@media(max-width:900px){.solarbox-g{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.solarbox-g{grid-template-columns:1fr}}
 .gt-hint{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
   font-size:10.5px;color:var(--text3);padding:6px 2px 0}
 .gt-hint kbd{font-family:var(--fm);font-size:9.5px;background:var(--panel2);
   border:1px solid var(--border);border-radius:3px;padding:0 4px;color:var(--text2)}
+/* v1.0.11：光影时刻手填覆盖区属编辑期工具，打印件里隐藏。
+   与 .genbar 同理——策划案打出来给现场看，不需要让人回去填时刻。*/
+@media print{.solarbox{display:none!important}}
+
 /* 核对态 / 打印：甘特图无交互，只作为静态示意 */
 body[data-mode="check"] .gt-h{display:none}
 body[data-mode="check"] .gt-bar{cursor:default}
@@ -458,7 +483,7 @@ body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
     <div>
       <div class="vt">
         <h1>拍摄策划工作台</h1>
-        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.10</span>
+        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.11</span>
       </div>
       <div class="sub">T1-1 模板 v3.0 · 12 节（编号 0–11）</div>
     </div>
@@ -521,6 +546,98 @@ body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
 
 <script>
 /* ==========================================================================
+   0. 存储安全层（v1.0.12 新增）—— 全局唯一的 localStorage 读写入口
+   --------------------------------------------------------------------------
+   【为什么必须有这一层 —— 血泪教训，见 BC-20261005 白屏故障】
+   本工具是「单文件、零依赖、双击即用」，全部数据存在浏览器 localStorage。
+   而本脚本是一整段顶层 <script>：**任何一处顶层抛错，整段脚本终止**，
+   表现为「顶栏按钮还在（HTML 静态内容），但导航为空、主体全白」，
+   用户完全不知道发生了什么。
+
+   历史缺陷：曾有三处裸 `JSON.parse(localStorage.getItem(k))` 无任何防护：
+     - sw_usedno   编号流水
+     - sw_models   模特库
+     - sw_venues   场地库
+   只要这三个键之一：
+     ① 存过非法 JSON（异常退出写半个 / 手改 / 扩展污染 / 旧版残留），或
+     ② localStorage 本身不可用（隐私模式 / 站点策略禁用 / file:// 受限）
+   就会在第一行抛错 → 整页白屏。实测：本地 file:// 与线上 GitHub Pages 同样中招。
+
+   本层对策：**读取永不抛错**。三种失败全部兜底为默认值，并把脏数据
+   备份到 `<key>__broken` 后清掉，让用户下次打开自动恢复正常。
+   另加 window.__booted 哨兵，供 §0.1 白屏兜底判断首绘是否真的跑完。
+   ========================================================================== */
+const LS_NS = {
+  /* 是否可用：试探性写入再删除，隐私模式/禁用会抛错 */
+  ok: (function(){
+    try {
+      const t = '__ls_probe__';
+      localStorage.setItem(t, '1');
+      localStorage.removeItem(t);
+      return true;
+    } catch (e) { return false; }
+  })()
+};
+
+/* 原始读取：任何异常都返回 null，绝不外抛 */
+function lsRaw(key){
+  try { return localStorage.getItem(key); }
+  catch (e) { return null; }
+}
+
+/* 安全写入：任何异常都静默失败（例如配额满），返回是否成功 */
+function lsSet(key, val){
+  try { localStorage.setItem(key, val); return true; }
+  catch (e) { return false; }
+}
+
+/* 安全读取 + JSON 解析 + 结构校验。
+   - fallback：解析失败或结构不符时的默认值（会被深拷贝一份返回）
+   - guard：可选的结构校验函数，返回 false 视为数据损坏
+   命中损坏时：把原值备份到 `${key}__broken`（最多留一份），再删除主键，
+   使下一次启动回到干净状态。 */
+function lsJSON(key, fallback, guard){
+  const clone = v => { try { return JSON.parse(JSON.stringify(v)); } catch(e){ return v; } };
+  const bad = (why) => {
+    const old = lsRaw(key);
+    if (old !== null) {
+      lsSet(key + '__broken', old);   // 留证，便于事后排查
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+    if (window.console && console.warn) {
+      console.warn('[safeLS] 键 "' + key + '" 数据损坏已重置 → ' + why);
+    }
+    return clone(fallback);
+  };
+  if (!LS_NS.ok) return clone(fallback);      // 存储不可用 → 直接给默认值
+  const s = lsRaw(key);
+  if (s === null || s === '') return clone(fallback);
+  let v;
+  try { v = JSON.parse(s); }
+  catch (e) { return bad('JSON 解析失败：' + (e && e.message || e)); }
+  if (guard && !guard(v)) return bad('结构校验未通过');
+  return v;
+}
+
+/* 布尔 / 字符串等简单值的安全读写 */
+function lsStr(key, fallback){
+  const s = lsRaw(key);
+  return (s === null) ? (fallback === undefined ? null : fallback) : s;
+}
+
+/* 供电调试：一键清空本工具的全部键（含损坏备份），恢复出厂 */
+function lsPurgeAll(){
+  const keys = ['sw_doc_v01','sw_usedno','sw_models','sw_venues','sw_solar_override',
+                'sw_app_ver','sw_usedno__broken','sw_models__broken','sw_venues__broken'];
+  keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+}
+
+/* ---- 首屏兜底哨兵（§0.1 用）----
+   首绘成功时置 true；若 DOMContentLoaded 后一段时间仍未置位，
+   说明脚本某处提前终止，此时展示可读的故障提示（而不是白屏）。 */
+window.__booted = false;
+
+/* ==========================================================================
    1. 主题注册表 —— 新增主题只加一组 token，不动组件 CSS
    ========================================================================== */
 const THEMES = { light:{}, dark:{} };
@@ -541,7 +658,9 @@ const THEME_NAMES = { light:'☀ 浅色', dark:'☾ 暗色' };
    ========================================================================== */
 const AUTO_NO = {
   prefix: 'CX',
-  used: JSON.parse(localStorage.getItem('sw_usedno') || '{}'),   // {'CX-20260505':3}
+  /* v1.0.12：改走 lsJSON，脏数据/存储不可用一律回退空对象，
+     绝不再因单个键损坏而中断整段脚本（原为裸 JSON.parse，白屏元凶之一） */
+  used: lsJSON('sw_usedno', {}, v => v && typeof v === 'object' && !Array.isArray(v)),
   key(d){ return this.prefix+'-'+(d||'').replace(/-/g,''); },
   /* 生成下一个可用编号；baseDate 为空则用今天 */
   next(baseDate){
@@ -687,23 +806,150 @@ D.s8={ 行:[
    而 const 有暂时性死区（TDZ）：若定义在文件后部，页面加载时 reqAll()
    一执行就抛 ReferenceError，整个工作台白屏。 */
 const S11_MIN=5, S11_MAX=25;
-/* §8 行程安排（v1.6 做实）：timetable 行数组 + 特殊时段标记。
-   甘特时段轴的「黄金时刻 / 日落」按**季节**给出典型值（北京时间），
-   实际日落时刻受纬度与具体日期影响，需以拍摄地实测为准，故标注为参考值。 */
-const S8_SLOTS=[
-  {k:'妆造',  t:'08:30',  seg:'prep',  c:'#7d8a76',
-   tip:'化妆 / 换装 / 妆面参考图确认'},
-  {k:'布光',  t:'10:00',  seg:'setup', c:'#8a8467',
-   tip:'架灯、测光、确认 §7 布光方案落地'},
-  {k:'拍摄',  t:'12:00',  seg:'shoot', c:'#8a7b68',
-   tip:'正片拍摄，按 §11 参考样片对齐风格'},
-  {k:'黄金时刻', t:'16:30', seg:'golden', c:'#b8863f',
-   tip:'★ 低角度暖光，逆光/剪影最佳时段'},
-  {k:'日落',  t:'18:30',  seg:'sunset', c:'#a05a4a',
-   tip:'★ 蓝调时刻，日落后 30 分钟内'},
-  {k:'收工',  t:'19:30',  seg:'wrap',  c:'#6f7d8a',
-   tip:'归还场地物品、向管理员致谢'}
-];
+/* ==========================================================================
+   §8.1 甘特时段轴的关键节点
+   --------------------------------------------------------------------------
+   v1.0.11 变更（用户需求：每天黄金/蓝调时刻都不同，上午和下午各有一组，
+   拍摄时段选上午就显示上午那组，下午/晚上就显示下午那组）：
+
+   此前这里写死一组全年通用值（全站只有「黄金时刻 16:30」+「日落 18:30」，
+   蓝调仅是日落节点 tip 里的一句文案），而 §0.2 的 PERIODS 下拉
+   （上午/下午/晚上）压根没有任何代码消费它——填了也不影响甘特图。
+
+   现在改成三件事：
+     ① SOLAR 表：广州（23.13°N/113.26°E）按 12 个月分档的日出/日落/
+        上午黄金/上午蓝调/下午黄金/下午蓝调。每月取 15 日为该月代表值。
+        由 solar_gen.py 用 NOAA 简化太阳位置算法算出，口径与
+        miniwebtool 黄金蓝调计算器一致：
+           日出日落= 高度角 -0.833°（含大气折射 + 太阳圆盘半径）
+           黄金时刻  = 高度角 +6° ~ -4°
+           蓝调时刻  = 高度角 -4° ~ -6°（民用晨昏蒙影下段）
+        实测广州全年日长10.7~13.6 小时，6 月最长、1 月最短，符合预期。
+        ⚠️ 若拍摄地不是广州，务必在下方「光影时刻」区按当地数据手填覆盖。
+     ② slotSet()：按 D.s0.时段 取对应那组。时段未选时默认用下午档
+        （多数人下午拍，且下午那组信息量最大）。
+     ③ 覆盖优先：用户在 §8.1「光影时刻」区手填的值 > 内置表。
+   --------------------------------------------------------------------------
+   节点顺序：上午黄金 → 上午蓝调 →（白天）→ 下午黄金 → 下午蓝调。
+   蓝调从「日落的 tip 文案」升为独立节点—— 摄影上它是独立的拍摄窗口，
+   需要单独的曝光参数（三脚架 + 长曝），不该藏在别的节点说明里。 */
+const SOLAR={
+  1:{sr:'06:52',ss:'17:44',amG:['06:37','07:25'],amB:['06:28','06:37'],pmG:['17:11','17:59'],pmB:['17:59','18:08']},
+  2:{sr:'06:31',ss:'17:54',amG:['06:17','07:02'],amB:['06:08','06:17'],pmG:['17:23','18:08'],pmB:['18:08','18:17']},
+  3:{sr:'06:18',ss:'18:17',amG:['06:04','06:47'],amB:['05:55','06:04'],pmG:['17:47','18:31'],pmB:['18:31','18:40']},
+  4:{sr:'06:06',ss:'18:47',amG:['05:52','06:37'],amB:['05:44','05:52'],pmG:['18:17','19:01'],pmB:['19:01','19:10']},
+  5:{sr:'05:54',ss:'19:08',amG:['05:39','06:25'],amB:['05:29','05:39'],pmG:['18:37','19:23'],pmB:['19:23','19:32']},
+  6:{sr:'05:40',ss:'19:13',amG:['05:25','06:13'],amB:['05:15','05:25'],pmG:['18:41','19:29'],pmB:['19:29','19:39']},
+  7:{sr:'05:38',ss:'19:04',amG:['05:23','06:10'],amB:['05:13','05:23'],pmG:['18:32','19:19'],pmB:['19:19','19:29']},
+  8:{sr:'05:54',ss:'18:51',amG:['05:39','06:24'],amB:['05:30','05:39'],pmG:['18:20','19:05'],pmB:['19:05','19:14']},
+  9:{sr:'06:23',ss:'18:41',amG:['06:09','06:53'],amB:['06:00','06:09'],pmG:['18:11','18:55'],pmB:['18:55','19:03']},
+ 10:{sr:'06:52',ss:'18:31',amG:['06:38','07:22'],amB:['06:30','06:38'],pmG:['18:00','18:45'],pmB:['18:45','18:53']},
+ 11:{sr:'07:11',ss:'18:13',amG:['06:56','07:43'],amB:['06:47','06:56'],pmG:['17:41','18:28'],pmB:['18:28','18:37']},
+ 12:{sr:'07:10',ss:'17:53',amG:['06:55','07:43'],amB:['06:45','06:55'],pmG:['17:20','18:08'],pmB:['18:08','18:18']}
+};
+/* 手填覆盖的存储键（localStorage，不进 D——它是「工具侧的参考数据」，
+   不是策划案内容，不该跟着整案导出/导入走） */
+const LS_SOLAR_OVR='sw_solar_override';
+let SOLAR_OVR={};
+try{ SOLAR_OVR=JSON.parse(localStorage.getItem(LS_SOLAR_OVR)||'{}')||{}; }catch(e){ SOLAR_OVR={}; }
+/* 覆盖值结构：{amG:['06:40','07:30'],amB:[...],pmG:[...],pmB:[...],sr:'',ss:''}
+   支持只填其中几项，未填的项回落到内置表。 */
+function solarOverride(){
+  return SOLAR_OVR[shotMonth()]||null;
+}
+function shotMonth(){
+  const d=String(D.s0.拍摄日期||'').match(/(\d{4})-(\d{2})/);
+  return d? +d[2] : new Date().getMonth()+1;
+}
+function solarFor(m){
+  return SOLAR[m]||SOLAR[1];
+}
+function saveSolarOverride(){
+  try{ localStorage.setItem(LS_SOLAR_OVR,JSON.stringify(SOLAR_OVR)); }catch(e){}
+}
+/* 时段 → 取上午档还是下午档。用户拍板：「选上午显示上午那组，
+   选下午、晚上都显示下午那组」（晚上没有太阳，自然取下午那组）。 */
+function solarHalf(){
+  return String(D.s0.时段||'').trim()==='上午' ? 'am' : 'pm';
+}
+/* 取出某档的四个时刻，已合并手填覆盖 */
+function solarTimes(){
+  const m=shotMonth(), base=solarFor(m), ov=solarOverride(), half=solarHalf();
+  const pick=k=> (ov&&Array.isArray(ov[k])&&ov[k][0]) ? ov[k] : base[k];
+  return { sr: (ov&&ov.sr)||base.sr, ss: (ov&&ov.ss)||base.ss,
+           amG:pick('amG'), amB:pick('amB'), pmG:pick('pmG'), pmB:pick('pmB'), half, month:m };
+}
+/* slotSet()（原 S8_SLOTS 常量）改函数生成：前三个（妆造/布光/拍摄）与收工是**流程节点**，
+   保持原样；四个光影节点按时段与月份动态取时刻。 */
+function slotSet(){
+  const T=solarTimes();
+  const am=T.half==='am';
+  return[
+    {k:'妆造',  t:'08:30',seg:'prep',  c:'#7d8a76',
+     tip:'化妆 / 换装 / 妆面参考图确认'},
+    {k:'布光',  t:'10:00',seg:'setup', c:'#8a8467',
+     tip:'架灯、测光、确认 §7 布光方案落地'},
+    {k:'拍摄',  t:'12:00',seg:'shoot', c:'#8a7b68',
+     tip:'正片拍摄，按 §11 参考样片对齐风格'},
+    {k:am?'上午黄金时刻':'下午黄金时刻', t:am?T.amG[0]:T.pmG[0], seg:'golden', c:'#b8863f',
+     tip:'★ 黄金时刻（太阳高度角 +6°~-4°）：低角度暖光，'
+        +'色温约 3000-4000K，逆光/剪影/轮廓光最佳时段'
+        +'\n本组为广州 ' + T.month + ' 月参考值（持续到 ' + (am?T.amG[1]:T.pmG[1]) + '）'},
+    {k:am?'上午蓝调时刻':'下午蓝调时刻', t:am?T.amB[0]:T.pmB[0], seg:'sunset', c:'#a05a4a',
+     tip:'★ 蓝调时刻（太阳高度角 -4°~-6°，民用晨昏蒙影）：冷调天空，'
+        +'需三脚架 + 长曝，人工灯光与天光亮度接近'
+        +'\n本组为广州 ' + T.month + ' 月参考值（持续到 ' + (am?T.amB[1]:T.pmB[1]) + '）'},
+    {k:'收工',  t:'19:30', seg:'wrap',  c:'#6f7d8a',
+     tip:'归还场地物品、向管理员致谢'}
+  ];
+}
+/* 手填覆盖表单：填了就用用户的，没填回落内置表。 */
+function solarOvrHtml(){
+  const T=solarTimes(), m=shotMonth(), base=solarFor(m);
+  const ov=solarOverride()||{};
+  const halfTxt=T.half==='am' ? '上午档' : '下午档（时段选了下午或晚上）';
+  const f=(key,label,baseVal,ph)=>{
+    const v=(ov&&Array.isArray(ov[key])&&ov[key][0])?ov[key][0]:'';
+    return `<div class="f" style="margin:0">
+      <label>${label}</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="time" data-solar="${key}0" value="${esc(v)}" style="flex:1"
+          placeholder="${esc(baseVal[0])}" title="内置参考 ${baseVal[0]}-${baseVal[1]}">
+        <span style="color:var(--text3);font-size:12px">→</span>
+        <input type="time" data-solar="${key}1" value="${esc(ov[key]?ov[key][1]:'')}"
+          placeholder="${esc(baseVal[1])}" title="内置参考 ${baseVal[0]}-${baseVal[1]}">
+      </div>
+      <div class="hint" style="font-size:10.5px">内置：${esc(baseVal[0])}–${esc(baseVal[1])}</div>
+    </div>`;
+  };
+  return `<div class="solarbox">
+    <div class="solarbox-h">
+      <b>光影时刻（黄金 / 蓝调）</b>
+      <span class="tag" style="font-size:10.5px">${esc(halfTxt)} · 广州 ${m} 月</span>
+      <span style="font-size:10.5px;color:var(--text3)">
+        日出 ${esc(T.sr)} · 日落 ${esc(T.ss)}</span>
+      ${Object.keys(ov).length?'<span class="tag tag-warn" style="font-size:10.5px">已手填覆盖</span>':''}
+    </div>
+    <div class="solarbox-n">
+      按<b>太阳高度角</b>算：黄金 +6°~-4°、蓝调 -4°~-6°，与
+      <a href="https://miniwebtool.com/zh-cn/%E9%BB%84%E9%87%91%E6%97%B6%E5%88%BB%E5%92%8C%E8%93%9D%E8%B0%83%E6%97%B6%E5%88%BB%E8%AE%A1%E7%AE%97%E5%99%A8/"
+         target="_blank" rel="noopener">黄金蓝调计算器</a>同口径。
+      <b>换城市请按当地数据手填覆盖</b>（内置表是广州值，纬度差得多时偏差明显）。
+    </div>
+    <div class="solarbox-g">
+      ${f('amG','上午黄金时刻',base.amG,'')}
+      ${f('amB','上午蓝调时刻',base.amB,'')}
+      ${f('pmG','下午黄金时刻',base.pmG,'')}
+      ${f('pmB','下午蓝调时刻',base.pmB,'')}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <button class="btn sm" data-solar-apply>应用到甘特图</button>
+      <button class="btn sm ghost" data-solar-clear>清除手填，回落内置表</button>
+      <span style="font-size:10.5px;color:var(--text3)">
+        切换 §0.2 的「拍摄时段」会改变甘特图取哪一组</span>
+    </div>
+  </div>`;
+}
 /* ---- 模特库 / 场地库（v1 存localStorage；CSV 与飞书接口见 04 调研报告）---- */
 /* ==========================================================================
    版本号：单一事实源。规则为 1.0.x（v1.0.9），不再用 v1.7/v1.8/v1.9 那套编号——
@@ -717,13 +963,20 @@ const S8_SLOTS=[
       结果「原型 v0.1」被当成工具版本 —— 用户测试的线上版其实早已迭代过多轮，
       页面却还写着 v0.1，版本对不上。这是版本标注必须独立成徽章的原因。
    ========================================================================== */
-const APP_VER='v1.0.10', TPL_VER='v3.0';
+const APP_VER='v1.0.11', TPL_VER='v3.0';
 const LS_MODEL='sw_models', LS_VENUE='sw_venues';
-let MODELS = JSON.parse(localStorage.getItem(LS_MODEL)||'[]');   // [{姓名,身高,体重,样图,备注,createdAt,updatedAt}]
-let VENUES = JSON.parse(localStorage.getItem(LS_VENUE)||'[]');   // [{id,名称,所在区,适配风格,时效性,门票,简述,图:[],备注}]
+/* v1.0.12：均改走 lsJSON + 数组结构校验。
+   原为裸 JSON.parse(localStorage.getItem(...))，是该键被污染时白屏的直接原因。
+   数据被污染时自动备份到 sw_models__broken / sw_venues__broken 并重置为空数组，
+   用户下次打开即恢复正常（损失的是已被写坏的那份缓存数据，无法挽回）；
+   不再连带整页瘫痪 —— 这是本次修复的核心。 */
+const isModelArr  = v => Array.isArray(v);
+const isVenueArr  = v => Array.isArray(v);
+let MODELS = lsJSON(LS_MODEL, [], isModelArr);   // [{姓名,身高,体重,样图,备注,createdAt,updatedAt}]
+let VENUES = lsJSON(LS_VENUE, [], isVenueArr);   // [{id,名称,所在区,适配风格,时效性,门票,简述,图:[],备注}]
 let _venueSeq = VENUES.reduce((m,v)=>Math.max(m,+String(v.id).replace(/\D/g,'')||0),0);
-const saveModels = ()=>localStorage.setItem(LS_MODEL,JSON.stringify(MODELS));
-const saveVenues= ()=>localStorage.setItem(LS_VENUE,JSON.stringify(VENUES));
+const saveModels = ()=>lsSet(LS_MODEL,JSON.stringify(MODELS));
+const saveVenues= ()=>lsSet(LS_VENUE,JSON.stringify(VENUES));
 try{ const c=JSON.parse(localStorage.getItem(LS)||'null'); if(c) D=Object.assign(D,c); }catch(e){}
 /* 全新开始（非恢复草稿）时，撰写日期默认今天 —— 编号的 YYYYMMDD 段依赖它。
    恢复草稿时不覆盖用户已填的日期。 */
@@ -1246,7 +1499,7 @@ function sec0(){
     ${fld('拍摄日期',D.s0.拍摄日期,'0.拍摄日期',{type:'date',req:true,
       hint:wk()?('拍摄日：'+wk()):'填入后自动显示星期'})}
     ${fld('拍摄时段',D.s0.时段,'0.时段',{type:'select',req:true,opts:PERIODS,
-      hint:'决定 §7 行程表的起止时间与日落窗口'})}
+      hint:'决定 §8.1 甘特图取哪一组光影时刻：上午→上午那组，下午/晚上→下午那组'})}
     <div class="f">
       <label>预计时长</label>
       <div style="display:flex;gap:7px;align-items:center">
@@ -1849,7 +2102,7 @@ function m2t(m){
 const SNAP=15;
 const snap=m=>Math.round(m/SNAP)*SNAP;
 /* 事项 → 色值：按关键词归类，让甘特图一眼看出「妆造/拍摄/收尾」阶段 */
-/* 阶段配色：① 先按 S8_SLOTS 的节点名精确命中（「黄金时刻」「日落」等）
+/* 阶段配色：① 先按 slotSet() 的节点名精确命中（「黄金时刻」「日落」等）
    ② 再按关键词兜底。「逆光拍摄」这类应归shoot，所以精确名优先级高于关键词。 */
 const S8_SEG=[
  [/妆|化妆|定妆|换装|服装|备装/,   'prep',  '#7d8a76'],
@@ -1862,8 +2115,30 @@ const S8_SEG=[
 /* v1.9 需求4：取某个时段节点在 8.2 表格里的实际开始时间。
    匹配口径与点击联动一致——事项名与节点名**完全相同**才算联动，
    避免「逆光组拍摄」这类模糊匹配把节点时刻拽偏。 */
+/* v1.0.11：节点名兼容匹配。
+   为什么需要：v1.0.11 把「黄金时刻 / 日落」改名为
+   「上午黄金时刻 / 上午蓝调时刻 / 下午黄金时刻 / 下午蓝调时刻」，
+   而 slotRowIndex 原本是**精确名**比对。老策划案（v1.0.10 及以前）
+   的 §8.2 里存的仍是「黄金时刻」「日落」，改名后一比就miss，
+   联动会静默失效——用户在表格里填的时间不再反映到轴上，
+   且没有任何报错提示，属于典型的「升级即退化」。
+   对策：精确名优先 → 历史别名 → 基名（去掉上午/下午前缀）唯一命中。
+   基名唯一性校验是必要的：若表格里同时有「上午黄金时刻」和
+   「下午黄金时刻」两行（全天拍摄），不应由任一侧节点去认领。 */
+const SLOT_ALIAS={'日落':'蓝调时刻','黄昏':'蓝调时刻'};
+function slotBaseName(k){
+  let s=String(k||'').trim();
+  if(SLOT_ALIAS[s]) s=SLOT_ALIAS[s];
+  return s.replace(/^(上午|下午)/,'').trim();
+}
 function slotRowIndex(k){
-  return (D.s8.行||[]).findIndex(r=>String(r.事||'').trim()===k);
+  const rows=D.s8.行||[], t=String(k||'').trim();
+  let i=rows.findIndex(r=>String(r.事||'').trim()===t);
+  if(i>=0) return i;
+  const base=slotBaseName(t);
+  if(!base) return -1;
+  const cand=rows.filter(r=>slotBaseName(r.事)===base);
+  return cand.length===1 ? rows.indexOf(cand[0]) : -1;
 }
 function slotActual(k){
   const i=slotRowIndex(k);
@@ -1873,14 +2148,18 @@ function slotActual(k){
 }
 /* v1.9：轴上被 8.2 联动命中的节点集合，渲染表格时用来打标记 */
 function slotLinkedSet(){
-  return new Set(S8_SLOTS.filter(s=>slotActual(s.k)!=null).map(s=>s.k));
+  return new Set(slotSet().filter(s=>slotActual(s.k)!=null).map(s=>s.k));
 }
 function segOf(s){
   const t=String(s||'').trim();
   if(!t) return {seg:'shoot', c:'#8a7b68'};
   /* ① 精确名：与 §8.1 关键节点同名 → 用节点配色，保证图例与节点标签一致 */
-  const hit=S8_SLOTS.find(x=>x.k===t);
+  const hit=slotSet().find(x=>x.k===t);
   if(hit) return {seg:hit.seg, c:hit.c};
+  /* ①b v1.0.11：基名匹配。老策划案表格里写的是「黄金时刻」「日落」，
+        与改过名的节点对不上，靠这里保住节点配色不退回通用拍摄色。 */
+  const bh=slotSet().find(x=>slotBaseName(x.k)===slotBaseName(t));
+  if(bh) return {seg:bh.seg, c:bh.c};
   /* ② 关键词兜底 */
   for(const[re,seg,c] of S8_SEG) if(re.test(t)) return {seg,c};
   return {seg:'shoot', c:'#8a7b68'};
@@ -1909,6 +2188,26 @@ function repaintGantt(){
   box.innerHTML=gtBlock();
   const fresh=box.firstElementChild;
   if(old&&fresh) old.replaceWith(fresh);
+
+  /* --- 8.1 v1.0.11：光影时刻覆盖区也要跟着重画。
+     为什么单独处理：拍摄时段（§0.2）或拍摄日期（§0.2）变化时，
+     甘特轴上四个光影节点的**时刻与名称**都变（上午黄金 ↔ 下午黄金）。
+     但 §0.2 在页面顶部，用户改的是那边的 select，不能整页 render()——
+     那会销毁 §8 表格里正在编辑的 input。所以只换这两个块。--- */
+  const oldS=sec.querySelector('.solarbox');
+  if(oldS){
+    const tb=document.createElement('div'); tb.innerHTML=solarOvrHtml();
+    const fs=tb.firstElementChild;
+    if(fs) oldS.replaceWith(fs);
+  }
+
+  /* --- 8.1 v1.0.11：图例也要跟着重画。
+     为什么容易漏：图例是 .gt 的**兄弟节点**（在 gtBlock() 之外），
+     上面那次 .gt.replaceWith 换不掉它。不补这一句的话，
+     §0.2 从「下午」切到「上午」，轴上节点已变成「上午黄金时刻」，
+     下方图例却还写着「下午黄金时刻 / 下午蓝调时刻」——自相矛盾。--- */
+  const oldL=sec.querySelector('[data-slot-legend]');
+  if(oldL) oldL.innerHTML=slotLegend();
 
   /* --- 8.2 表格：只改派生列，不动 input --- */
   const rows=sec.querySelectorAll('tbody tr');
@@ -1962,6 +2261,19 @@ function gtRange(){
     hi=Math.max(hi,m+(+r.耗时||0));
   });
   if(!isFinite(lo)){ lo=8*60; hi=20*60; }
+  /* v1.0.11：把当前时段对应的光影节点也纳入范围。
+     起因：只按行程行算时，最早一行通常是妆造 08:30 → T0=07:00，
+     而「上午黄金 06:37 / 上午蓝调 06:28」落在 T0 之前，
+     被 gtBlock 的 m<T0 过滤掉 —— 结果「选上午却看不到上午那组光影」，
+     恰好废掉了本需求的核心场景。
+     只扩不缩：绝不能因为多了两个节点就把本来合适的轴拉宽。 */
+  try{
+    slotSet().forEach(sl=>{
+      if(!/黄金时刻|蓝调时刻/.test(sl.k)) return;   /* 只看光影节点，流程节点不动轴 */
+      const m=t2m(sl.t); if(m==null) return;
+      lo=Math.min(lo,m); hi=Math.max(hi,m+30);      /* 蓝调/黄金按 30 分钟窗算右界 */
+    });
+  }catch(e){ /* slotSet 在 TDZ 时静默降级为「只看行程行」 */ }
   let T0=Math.floor((lo-60)/60)*60;
   let T1=Math.ceil((hi+60)/60)*60;
   while(T1-T0<360) T1+=60;
@@ -1973,6 +2285,21 @@ function gtRange(){
    之前这段内联在 sec7() 里，repaintGantt 拿不到，只能整页 render() ——
    而用户正在 8.2 表格里打字，整页重建会销毁 input 导致失焦 / 光标跳走 /输入法断。
    现在 render 与增量重绘走同一条生成逻辑，两处永远不会画出不同的图。 */
+/* v1.0.11：图例文案动态生成。
+   此前是手写死的「妆造/布光/拍摄/黄金时刻/日落/收工」，
+   节点改名（黄金时刻→上午/下午黄金时刻、日落→上午/下午蓝调时刻）后
+   图例与实际节点对不上。改为从 slotSet() 生成，永远一致。 */
+function slotLegend(){
+  const ks=slotSet().map(s=>s.k);
+  return '灰色竖条为<b>关键节点参考线</b>（'+ks.join(' / ')
+    +'），典型值仅供参考；<b>冬季日落早约 1 小时</b>，'
+    +'逆光剪影、氛围片都靠黄金与蓝调这两段。';
+}
+/* 甘特图容器的可用像素宽度（去掉滚动条余量），供标签防重叠换算 */
+function gtHostW(){
+  const el=document.querySelector('.gt');
+  return el ? Math.max(280, el.clientWidth-14) : 900;
+}
 function gtBlock(){
   const arr=D.s8.行;
   const {T0,T1,span}=gtRange();
@@ -1985,19 +2312,39 @@ function gtBlock(){
   /* 关键节点背景标记（整列高亮 + 顶部可点标签）
      v1.9 需求4：节点时刻改为**跟随 8.2 timetable 的实际行**，而非固定常量——
      用户把「黄金时刻」改到 17:20，轴上标签同步显示 17:20，两处不再打架。
-     没有对应行时才回落到 S8_SLOTS 的典型值，并标「参考」以示区分。 */
-  const slots=S8_SLOTS.map(sl=>{
-    const slotTime=slotActual(sl.k);        /* 实际时刻（来自 8.2 行） */
-    const m=t2m(slotTime||sl.t);
-    const linked=slotTime!=null;
+     没有对应行时才回落到 slotSet() 的典型值，并标「参考」以示区分。 */
+  /* v1.0.11：节点标签防重叠。
+     上午档时轴范围被拉到 05:00–19:00，五个标签全挤在 06:28–08:30 之间，
+     文字互相压盖糊成一团。做法：按 x 顺序遍历，与上一个标签的右边界
+     间距不足就往下让一行（标签绝对定位，天然可错位），并画一条细引线
+     回到真实时刻—— 错位不丢准确性。 */
+  const LABW=78;/* 标签近似宽度(px)，用于估算占位 */
+  let lastRight=-1e9, lastLine=0;
+  const slots=slotSet().map(sl=>{
+    /* v1.0.11 修既有缺陷：时刻必须在**一处**决定，绘图与标签文字共用。
+       原来绘图用 slotTime||sl.t（正确），标签却直接用 slotTime，
+       未与 8.2 联动时它是 null → 标签只显示节点名、缺时刻，
+       而背景块画在正确位置 —— 「块对字缺」，肉眼极易放过。 */
+    const linked=slotActual(sl.k)!=null;
+    const label =slotActual(sl.k) || sl.t;   /* 实际时刻，未联动则用典型值 */
+    const m=t2m(label);
     if(m==null||m<T0||m>T1) return '';
     const w=Math.max(0,pct(m+60)-pct(m));
-    return `<div class="gt-slot" style="left:${pct(m)}%;width:${w}%;--c:${sl.c}"></div>`
+    /* 防重叠：估算该标签的像素左界，与上一个比较；不够就让到下一行 */
+    const hostW=gtHostW();
+    const px=pct(m)/100*hostW;
+    let line=0;
+    if(lastRight>-1e8 && px<lastRight+6) line=lastLine+1;
+    lastRight=px+LABW; lastLine=line;
+    const lead=line
+      ? `<span class="gt-slotlab-lead" style="left:calc(${pct(m)}% + 2px);height:${line*14}px"></span>`
+      : '';
+    return `<div class="gt-slot" style="left:${pct(m)}%;width:${w}%;--c:${sl.c}"></div>`+lead
       +`<button class="gt-slotlab${linked?' linked':''}" data-slot="${esc(sl.k)}"
-         style="left:calc(${pct(m)}% + 3px);--c:${sl.c}"
-         title="${esc(sl.k+' '+slotTime+'（'+(linked?'已与 8.2 联动':'典型参考值，未在 8.2 排入')+'）'
+         style="left:calc(${pct(m)}% + 3px);top:${line*14}px;--c:${sl.c}"
+         title="${esc(sl.k+' '+label+'（'+(linked?'已与 8.2 联动':'典型参考值，未在 8.2 排入')+'）'
            +'\n'+sl.tip+'\n\n点击：已排则定位到 8.2 对应行 / 未排则新增该阶段')}">`
-        +`\u2605 ${esc(sl.k)} ${esc(slotTime)}${linked?'':'<i class="ref">参考</i>'}</button>`;
+        +`\u2605 ${esc(sl.k)} ${esc(label)}${linked?'':'<i class="ref">参考</i>'}</button>`;
   }).join('');
   /* 甘特条：整块拖 = 改开始；左右边缘 = 改时长 */
   const bars=arr.map((r,i)=>{
@@ -2034,6 +2381,12 @@ function sec7(){
   return `<section class="sec" id="sec-8">
   ${secHead('8','行程安排',true)}
   <h3 id="anc-8-1">8.1 拍摄日甘特图<span class="rec" style="color:var(--amber)">可拖拽</span></h3>
+  ${solarOvrHtml()}
+  <div class="sec-d" style="margin:0 0 8px">
+    轴上带 <span style="color:#b8863f;font-weight:600">★</span> 的是<b>光影时刻节点</b>
+    （黄金 / 蓝调），按你选的<b>拍摄时段</b>取对应那组，并随<b>拍摄日期</b>换算当月值。
+    标注「参考」= 用的内置典型值，未在 8.2 排进行程；点击可在 8.2 里定位或新增该阶段。
+  </div>
   ${gtBlock()}
   <div class="gt-hint">
     <span><kbd>拖色块</kbd> 改开始时间</span>
@@ -2042,8 +2395,7 @@ function sec7(){
     <span><kbd>点★节点</kbd> 插入该阶段</span>
     <span>吸附粒度 ${SNAP} 分钟</span>
   </div>
-  <div class="hint">灰色竖条为<b>关键节点参考线</b>（妆造/布光/拍摄/黄金时刻/日落/收工），
-  典型值仅供参考；<b>冬季日落早约 1 小时</b>，逆光剪影、氛围片都靠这两段。</div>
+  <div class="hint" data-slot-legend>${slotLegend()}</div>
 
   <h3 id="anc-8-2">8.2 Timetable<span class="rec" style="color:var(--blue)">${arr.length} 项</span>
     <span style="font-weight:400;color:var(--text3);font-size:11px">
@@ -2444,6 +2796,9 @@ function render(){
   if(typeof ioRebind==='function') ioRebind();
   /* 重建后立刻按当前位置校正一次高亮（否则 render 后停留在旧章节） */
   if(typeof _scrollPick==='function') _scrollPick();
+  /* v1.0.12：首绘成功哨兵。到此处说明 sc0~s11 全部渲染、导航与进度都已更新，
+     页面是"活的"。§0 的白屏兜底据此判断是否需要弹故障面板。 */
+  window.__booted = true;
 }
 
 /* 存储占用指示条：常态显示 KB / 上限，≥75% 转黄，≥90% 转红并明确警示。
@@ -2556,6 +2911,14 @@ function patchLive(el){
      此前 6.5 只在首绘时算一次，用户填完 6.1–6.4 总表永远不刷新
      （与 v1.8「生成器材总单」按钮失效同源：数据进了D，却没人读它）。*/
   if(/^6\.(器材|滤镜|灯|附件)\.\d+\.(品|型|数|备)$/.test(p)) repaintGearTotal();
+  /* v1.0.11：拍摄日期 / 拍摄时段变化 → 甘特轴的光影节点要重算。
+     此前 PERIODS（上午/下午/晚上）这个下拉压根没有代码消费它——
+     §0.2 写着「决定行程表起止时间与日落窗口」，实际改了毫无影响。
+     现在时段真正生效了：上午→取上午那组，下午/晚上→取下午那组。*/
+  if(p==='0.拍摄日期'||p==='0.时段'){
+    /* 先更新 8.1 里的星期提示（拍摄日期改动的原有行为） */
+    repaintGantt();
+  }
 }
 /* 总功率 = Σ(功率 × 数量)
    注意：必须写回 D，不能只写 DOM —— 否则下一次 render() 会把手填结果冲掉。
@@ -2566,6 +2929,47 @@ function totalW(){
     return s+(isFinite(w)?w:0)*(isFinite(n)?n:0);
   },0);
 }
+/* v1.0.11：光影时刻手填覆盖的两个按钮。
+   不用 onclick 内联—— 事件委托挂一次，后续重绘换掉元素也不用重新绑定。*/
+document.addEventListener('click', e=>{
+  const ap=e.target.closest('[data-solar-apply]');
+  const cl=e.target.closest('[data-solar-clear]');
+  if(!ap&&!cl) return;
+  e.preventDefault();
+  if(cl){
+    delete SOLAR_OVR[shotMonth()];
+    saveSolarOverride();
+    repaintGantt();
+    toast('已清除' + shotMonth() + ' 月手填值，回落到内置表');
+    return;
+  }
+  /* 应用：把四个区间里「起点填了」的项收进覆盖对象。
+     终点留空时用起点 + 时长反推，避免出现 05:00→空白这种半截数据。 */
+  const box=e.target.closest('.solarbox'); if(!box) return;
+  const cur=SOLAR_OVR[shotMonth()]||{};
+  const out={...cur};
+  let any=false;
+  ['amG','amB','pmG','pmB'].forEach(k=>{
+    const a=box.querySelector('[data-solar="'+k+'0"]');
+    const b=box.querySelector('[data-solar="'+k+'1"]');
+    if(!a) return;
+    const s0=(a.value||'').trim(), s1=(b&&b.value||'').trim();
+    if(!s0&&!s1){ delete out[k]; return; }
+    let end=s1;
+    if(!end&&s0){
+      const st=t2m(s0); /* 内置时长作为默认长度 */
+      const base=(SOLAR[shotMonth()]||{})[k]||['00:00','00:00'];
+      let len=(t2m(base[1])??0)-(t2m(base[0])??0); if(!len) len=30;
+      end=m2t((st??0)+len);
+    }
+    out[k]=[s0||end,end]; any=true;
+  });
+  if(!any){ toast('还没有填任何时刻','warn'); return; }
+  SOLAR_OVR[shotMonth()]=out; saveSolarOverride();
+  repaintGantt();
+  toast('已应用' + shotMonth() + ' 月手填的光影时刻');
+});
+
 /* 版本号同步：静态 HTML 里写了一份占位，这里再用 APP_VER 覆盖。
    作用有3 个：
      ① 改版只需改 APP_VER 一处常量，不必记得手改 HTML；
@@ -2695,7 +3099,7 @@ document.addEventListener('click',async e=>{
   const slot=e.target.closest('[data-slot]');
   if(slot){
     const k=slot.dataset.slot;
-    const s=S8_SLOTS.find(x=>x.k===k); if(!s) return;
+    const s=slotSet().find(x=>x.k===k); if(!s) return;   /* v1.0.11: S8_SLOTS 已改为 slotSet() 函数 */
     const exist=(D.s8.行||[]).findIndex(r=>r.事===k);
     if(exist>=0){
       /* v1.9 需求4：轴上时刻已跟随 8.2 表格，所以此处不能再用 s.t 覆盖
@@ -2981,7 +3385,7 @@ document.querySelectorAll('#modeSeg button').forEach(b=>{
 function setTheme(t){
   document.documentElement.dataset.theme=t;
   $('#tBtn').textContent = t==='light'?'☾ 暗色':'☀ 浅色';
-  D.meta.theme=t; localStorage.setItem(LS,JSON.stringify(D));
+  D.meta.theme=t; lsSet(LS,JSON.stringify(D));
 }
 $('#tBtn').addEventListener('click',()=>
   setTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
@@ -3212,6 +3616,88 @@ function toast(msg){
     document.body.appendChild(el); }
   el.textContent=msg; el.style.display='block';
   clearTimeout(tT); tT=setTimeout(()=>el.style.display='none',3800);
+}
+
+/* ==========================================================================
+   v1.0.12 兜底：首绘哨兵 + 白屏可读提示
+   --------------------------------------------------------------------------
+   有了 §0 的存储安全层，已知的白屏根因已消除。但本脚本是一整段顶层
+   <script>，**任何**未预期的顶层异常仍会导致「导航空、主体白」的无声失败。
+   与其让用户对着白屏发呆，不如主动判断并给出一条能自救的提示。
+
+   机制：DOMContentLoaded 后给首绘一次机会（下一帧检查）。
+   若 window.__booted 仍为 false → 页面上渲染一块故障面板：
+     · 说明「数据可能损坏，工具已尝试自动修复」
+     · 提供「清空本地数据并重启」按钮（走 lsPurgeAll + reload）
+     · 提供「导出诊断信息」按钮，便于把 console 错误发来排查
+   ========================================================================== */
+window.addEventListener('error', function(ev){
+  try {
+    if (window.console && console.error) {
+      console.error('[boot] 未捕获异常：', ev && (ev.message || ev.error));
+    }
+  } catch (e) {}
+});
+
+window.addEventListener('DOMContentLoaded', function(){
+  /* 让 page 首绘（同事件里注册的 render）先跑完，再判断 */
+  setTimeout(function(){
+    if (window.__booted) return;          // 首绘成功，正常路径
+    showBootFailure();
+  }, 400);
+});
+
+function showBootFailure(){
+  if (document.getElementById('__boot_fail')) return;
+  var box = document.createElement('div');
+  box.id = '__boot_fail';
+  box.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;'
+    + 'align-items:center;justify-content:center;background:#f6f7f9;'
+    + 'font:14px/1.7 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:#222;padding:24px';
+  var card = document.createElement('div');
+  card.style.cssText = 'max-width:520px;background:#fff;border:1px solid #e3e6ea;'
+    + 'border-radius:12px;padding:24px 26px;box-shadow:0 8px 30px rgba(0,0,0,.08)';
+  card.innerHTML =
+      '<h2 style="margin:0 0 10px;font-size:17px">⚠ 工具未能正常启动</h2>'
+    + '<p style="margin:0 0 8px">多半是本机缓存的<b>数据损坏</b>，或浏览器<b>禁用了本地存储</b>'
+    + '（无痕模式 / 站点策略），导致脚本启动中断。</p>'
+    + '<p style="margin:0 0 16px;color:#666">已缓存的策划案会随清理一并删除，'
+    + '清空前请确认没有未导出的重要内容。</p>';
+  var b1 = document.createElement('button');
+  b1.textContent = '清空本地数据并重启';
+  b1.style.cssText = 'background:#2563eb;color:#fff;border:0;border-radius:8px;'
+    + 'padding:10px 16px;font-size:14px;cursor:pointer;margin-right:10px';
+  b1.onclick = function(){
+    try { lsPurgeAll(); } catch (e) {}
+    try { location.reload(); } catch (e) { location.href = location.href; }
+  };
+  var b2 = document.createElement('button');
+  b2.textContent = '导出诊断信息';
+  b2.style.cssText = 'background:#fff;color:#222;border:1px solid #d5d9de;border-radius:8px;'
+    + 'padding:10px 16px;font-size:14px;cursor:pointer';
+  b2.onclick = function(){
+    var lines = [];
+    lines.push('ver=' + (typeof APP_VER !== 'undefined' ? APP_VER : '?'));
+    lines.push('ua=' + navigator.userAgent);
+    lines.push('href=' + location.href);
+    lines.push('ls_ok=' + (LS_NS && LS_NS.ok));
+    try {
+      ['sw_doc_v01','sw_usedno','sw_models','sw_venues','sw_solar_override'].forEach(function(k){
+        var s = localStorage.getItem(k);
+        lines.push(k + ': ' + (s === null ? '(未设置)' : (s.length + ' 字符, 前80=' + s.slice(0,80))));
+      });
+    } catch (e) { lines.push('(localStorage 不可读: ' + e.message + ')'); }
+    var txt = lines.join('\n');
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.cssText = 'width:100%;height:120px;margin-top:14px;'
+      + 'font:12px/1.5 monospace;border:1px solid #d5d9de;border-radius:6px;padding:8px';
+    ta.readOnly = true;
+    card.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); b2.textContent = '已复制 ✓'; } catch (e) {}
+  };
+  card.appendChild(b1); card.appendChild(b2);
+  box.appendChild(card);
+  document.body.appendChild(box);
 }
 </script>
 </body>
