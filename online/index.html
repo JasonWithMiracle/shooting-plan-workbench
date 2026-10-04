@@ -102,9 +102,9 @@ html[data-theme="dark"] .btn.pri{color:#0f1115}
 .sec-n{font-family:var(--fm);font-size:11px;color:var(--text3);
   background:var(--panel2);padding:2px 7px;border-radius:var(--r3)}
 .badge{font-size:10px;padding:2px 8px;border-radius:20px;margin-left:auto;white-space:nowrap}
-.b-req{background:rgba(196,61,61,.12);color:var(--req)}
+/* v1.0.2：随「原型做实 / 占位」徽标一同移除 .b-req 与 .b-off
+   ——12 章节已全部做实，两者已成死代码。保留 .b-rec（含义强制项）。 */
 .b-rec{background:rgba(184,117,20,.12);color:var(--amber)}
-.b-off{background:var(--panel2);color:var(--text3);border:1px solid var(--border)}
 .sec-d{font-size:12px;color:var(--text3);margin-bottom:16px;
   padding-bottom:14px;border-bottom:1px dashed var(--border)}
 h3{font-size:12px;font-weight:600;color:var(--text2);margin:20px 0 10px;
@@ -517,18 +517,18 @@ let _seq = 1;
 /* 章节表（v1.6）：§12 交付与确认整节删除（属导出后的人工动作，原型不做）；
    §7 行程安排由占位升为做实；§11.2 小节删除。章节数 13 → 12。 */
 const SECS = [
- {id:'0',  t:'0. 基本信息',     core:true,  req:true },
- {id:'1',  t:'1. 模特',         core:true,  req:true },
- {id:'2',  t:'2. 服装',         core:true,  req:true },
- {id:'3',  t:'3. 妆造',         core:true,  req:true },
- {id:'4',  t:'4. 场地',         core:true,  req:true },
- {id:'5',  t:'5. 道具',         core:true,  req:false},
- {id:'6',  t:'6. 摄影器材',     core:true,  req:true },
- {id:'65', t:'6.5 布光方案',    core:true,  req:true },
- {id:'7',  t:'7. 行程安排',     core:true,  req:true },
- {id:'9',  t:'9. 注意事项',     core:true,  req:false},
- {id:'10', t:'10. 应急预案',    core:true,  req:true },
- {id:'11', t:'11. 参考样片',    core:true,  req:true }
+ {id:'0',  t:'0. 基本信息',     req:true },
+ {id:'1',  t:'1. 模特',         req:true },
+ {id:'2',  t:'2. 服装',         req:true },
+ {id:'3',  t:'3. 妆造',         req:true },
+ {id:'4',  t:'4. 场地',         req:true },
+ {id:'5',  t:'5. 道具',         req:false},
+ {id:'6',  t:'6. 摄影器材',     req:true },
+ {id:'65', t:'6.5 布光方案',    req:true },
+ {id:'7',  t:'7. 行程安排',     req:true },
+ {id:'9',  t:'9. 注意事项',     req:false},
+ {id:'10', t:'10. 应急预案',    req:true },
+ {id:'11', t:'11. 参考样片',    req:true }
 ];
 const TYPES=['古风/旗袍','新中式','法式','森系','港风夜拍','街拍直闪','溯溪','其他'];
 const VENUE_STYLES=['古风/国风','新中式','自然/森系','城市街景','欧式建筑','复古胶片',
@@ -809,14 +809,19 @@ function ck(label,on,path){
   return `<label class="ck"><input type="checkbox" data-p="${path}" ${on?'checked':''}>
     <span>${label}</span></label>`;
 }
-function secHead(n,t,core,req){
+/* 章节标题栏。
+   v1.0.2：移除「原型做实 / 占位」徽标——那是开发阶段的内部标记，
+   对使用者无意义；且12 章节已全部做实，该徽标恒为「做实」，
+   留着反而像在提示"还有功能没做完"。
+   同时移除 core 参数（原本只用于决定该徽标的文案），签名简化为 (n, t, req)。
+   保留「含强制项」徽标：它有真实信息量——告诉用户本节有拦截导出的必填校验。 */
+function secHead(n,t,req){
   return `<div class="sec-h"><span class="sec-n">${n}</span><h2>${t}</h2>
-    <span class="badge ${core?'b-req':'b-off'}">${core?'原型做实':'占位'}</span>
     ${req?'<span class="badge b-rec">含强制项</span>':''}</div>`;
 }
 function phBox(n,t,fields){
-  return `<div class="ph-box"><b>${n} ${t} · 原型占位</b>
-    字段：${fields}　—　本节结构已按 T1-1 保留，M2 阶段接入真实控件</div>`;
+  return `<div class="ph-box"><b>${n} ${t} · 待实现</b>
+    字段：${fields}</div>`;
 }
 
 /* --- §0 基本信息（13 项要素）--- */
@@ -827,7 +832,7 @@ const KINDS  =['照片','视频','照片+视频'];
 function sec0(){
   const no=D.s0.编号, other=D.s0.性质==='其他';
   return `<section class="sec" id="sec-0">
-  ${secHead('0','基本信息',true,true)}
+  ${secHead('0','基本信息',true)}
   <div class="sec-d">拍摄策划案立项信息 · <b>14 项字段+ 只读编号</b>。
   策划案编号为只读自动分配，是本策划案在目录、台账、成片侧的<b>唯一主键</b>。
   <br>📌 模特身体数据统一在 <b>§1</b> 管理、场地信息统一在 <b>§4</b> 管理；
@@ -936,7 +941,7 @@ const MODEL_FIELDS=[
 function sec1(){
   const m=D.s1, known=MODELS.some(x=>x.姓名===m.姓名);
   return `<section class="sec" id="sec-1">
-  ${secHead('1','模特',true,true)}
+  ${secHead('1','模特',true)}
   <div class="sec-d">模特档案为<b>可复用资产</b>——同一模特二次合作时，
   在下方「模特库」选中姓名即可<b>一键调出</b>其身高 / 体重 / 样图，无需重复填写。</div>
 
@@ -1014,7 +1019,7 @@ function sec1(){
 function sec4(){
   const v=D.s4;
   return `<section class="sec" id="sec-4">
-  ${secHead('4','场地',true,true)}
+  ${secHead('4','场地',true)}
   <div class="sec-d">场地档案为<b>可复用资产</b>——场地库的「时效性 / 门票 / 参考图」
   会随时间变化，每次选场后<b>带入当次快照</b>到本策划案，避免用过期信息排期。</div>
 
@@ -1106,7 +1111,7 @@ function sec2(){
     <div class="addrow no-print"><button class="btn sm" data-add="${key}">+ 添加一行</button></div>`;
 
   return `<section class="sec" id="sec-2">
-  ${secHead('2','服装',true,true)}
+  ${secHead('2','服装',true)}
   <div class="sec-d">大纲要求：<b>所有出现在画面里的单品必须逐一写明并配参考图</b>。
   参考图会随导出嵌入 PDF/DOCX 对应位置。
   <br>📌 采用<b>单一服装表</b>：旗袍、连衣裙等<b>连体服饰无法拆分上下装</b>，
@@ -1135,7 +1140,7 @@ function sec2(){
 function sec3(){
   const c=D.s3.妆,h=D.s3.发;
   return `<section class="sec" id="sec-3">
-  ${secHead('3','妆造',true,true)}
+  ${secHead('3','妆造',true)}
   <div class="sec-d">强制项已收敛为<b>两件套：整体风格 + 参考图</b>。
   腮红 / 口红 / 眼影等细项为选填——<b>有想法才写，没想法让化妆师自由发挥</b>，
   避免过度约束导致现场僵化。
@@ -1188,7 +1193,7 @@ function sec65(){
   const dirOpts=(sel)=>`<option value="">—</option>`+
     LIGHT_DIRS.map(o=>`<option ${sel===o?'selected':''}>${o}</option>`).join('');
   return `<section class="sec" id="sec-65">
-  ${secHead('6.5','布光方案',true,true)}
+  ${secHead('6.5','布光方案',true)}
   <div class="sec-d">v3 新增强制节 · <b>实测 17 套策划案 0% 填写（最大缺口）</b>。
   <br>⚡ 支持<b>严谨 / 快捷两套方案</b>：严谨用 3D 布光图固化灯位并要求供电形式；
   快捷只需登记光位与灯数，<b>3D 图与渲染元数据均非必填，可直接导出</b>。</div>
@@ -1319,7 +1324,7 @@ function sec65(){
 function sec10(){
   const R=D.s10.风[0];
   return `<section class="sec" id="sec-10">
-  ${secHead('10','应急预案',true,true)}
+  ${secHead('10','应急预案',true)}
   <div class="sec-d">v3 新增强制节· 实测 0%。文案原话：
   「当拍摄外景时我们没办法确保天气一定就如预期一般美好……我们需要制定 planB」</div>
 
@@ -1364,7 +1369,7 @@ const NOTE_ITEMS=[
 ];
 function sec9(){
   return `<section class="sec" id="sec-9">
-  ${secHead('9','注意事项',true,false)}
+  ${secHead('9','注意事项',false)}
   <div class="sec-d">拍摄活动的<b>基本须知</b>，启动前向全体参与者宣读并确认。
   下方签署栏可直接打印签字，或用浏览器「打印 → 另存为 PDF」带走。
   独立沟通表见交付文件 <b>05-拍摄前沟通checklist.md</b>。</div>
@@ -1404,7 +1409,7 @@ function sec9(){
 }
 function ph(n,t,fields){
   return `<section class="sec" id="sec-${n}">
-  ${secHead(n,t,false,false)}
+  ${secHead(n,t,false)}
   ${phBox(n,t,fields)}</section>`;
 }
 
@@ -1431,7 +1436,7 @@ function sec7(){
   const bandOf=t=>{ const m=t2m(t); return m==null? null
     : Math.max(0, Math.min(100,(m-T0)/span*100)); };
   return `<section class="sec" id="sec-7">
-  ${secHead('7','行程安排',true,true)}
+  ${secHead('7','行程安排',true)}
   <div class="sec-d">拍摄当天的<b>时间管理</b>。先在下方的时段带上点出关键节点，
   再按实际进度补全 timetable。<b>人员分工不在本节范围内。</b></div>
 
@@ -1510,7 +1515,7 @@ const PROP_KINDS=['拍摄道具','互动道具','氛围道具','实用道具'];
 function sec5(){
   const p=D.s5, arr=p.道具;
   return `<section class="sec" id="sec-5">
-  ${secHead('5','道具',true,false)}
+  ${secHead('5','道具',false)}
   <div class="sec-d">本场要用到的道具与<b>参考图</b>。
   清单供助理提前打包，参考图供模特与造型师对风格。</div>
 
@@ -1587,7 +1592,7 @@ function gearTable(key,rows,hint,unit){
 function sec6(){
   const g=D.s6;
   return `<section class="sec" id="sec-6">
-  ${secHead('6','摄影器材',true,true)}
+  ${secHead('6','摄影器材',true)}
   <div class="sec-d">登记<b>本场会带到的器材</b>，供助理打包与成本核算。
   注意：<b>器材清单 ≠ 布光方案</b>——这里记「带了什么」，§6.5 记「怎么摆」。</div>
 
@@ -1627,7 +1632,7 @@ function sec6(){
 function sec11(){
   const r=D.s11, arr=r.样片||[], n=arr.length;
   return `<section class="sec" id="sec-11">
-  ${secHead('11','参考样片',true,true)}
+  ${secHead('11','参考样片',true)}
   <div class="sec-d">拍摄前把<b>想要的成片感觉</b>摆出来——这是本策划案最直观的沟通依据。
   摄影助理与模特看图对齐审美，比文字描述快得多。</div>
 
@@ -1674,13 +1679,15 @@ function navRender(){
     per[sec]=per[sec]||{d:0,t:0}; per[sec].t++;      /* 分母=必填项总数 */
     if(done.has(sec+'-'+k)) per[sec].d++;
   });
+  /* v1.0.2：移除侧边栏的 ◆ 标记 —— 它与已删除的「原型做实」徽标同义，
+     都是开发阶段区分「核心节 / 占位节」的内部标记。
+     12 章节已全部做实，且每节已有「已完成项/必填项」计数，信息更实用。 */
   $('#nav').innerHTML = SECS.map(s=>{
     const p=per[s.id]; let cls='',st='';
     if(p){ const r=p.d/p.t;
       st=p.d+'/'+p.t; cls = r>=1?'done':(p.d>0?'part':''); }
     return `<a href="#sec-${s.id}" class="${cls} ${s.id===cur?'on':''}">
-      <span>${esc(s.t)}</span>${s.core?'<span class="st" style="color:var(--accent)">◆</span>':''}
-      <span class="st">${st}</span></a>`;
+      <span>${esc(s.t)}</span><span class="st">${st}</span></a>`;
   }).join('');
 }
 let cur='0';
