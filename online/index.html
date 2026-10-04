@@ -2365,26 +2365,11 @@ function sec6(){
     /* v1.9：§6.5「器材总清单与存储卡算式」整节删除。
        器材信息不再手工维护第二份，改为由 6.1–6.4 实时聚合出的只读总表 ——
        页面上作为核对清单，导出时这张表就是器材部分的全部内容（信息聚合，不再重复维护）。*/
-    const t=gearSummary();
     return `<h3 id="anc-6-5">6.5 器材总表
       <span class="rec" style="color:var(--accent)">由 6.1–6.4 自动聚合 · 只读</span>
       <button class="btn sm ghost no-print" id="genGear" style="margin-left:10px"
         title="查看这张总表的汇总口径">? 汇总口径</button></h3>
-    ${t.totalN?`<div class="tbl-wrap"><table class="geartotal">
-      <thead><tr><th style="width:110px">品类</th><th>型号 / 名称</th>
-        <th style="width:70px">数量</th><th style="width:90px">来源</th></tr></thead>
-      <tbody>${t.rows.map(r=>`<tr>
-        <td><b>${esc(r.品)}</b></td>
-        <td>${esc(r.型)}</td>
-        <td style="font-family:var(--fm);text-align:right">${r.q}</td>
-        <td style="color:var(--text3);font-size:11px">${esc(r.src)}</td>
-      </tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="2"><b>合计</b></td>
-        <td style="font-family:var(--fm);text-align:right"><b>${t.totalP}</b></td>
-        <td style="color:var(--text3);font-size:11px">${t.totalN} 项</td></tr></tfoot>
-    </table></div>`
-    :`<div class="note" style="margin:0">6.1–6.4 还没有有效条目。`
-      +`在上面的四张表里登记器材，这里会自动聚合成一张总表，导出时直接使用。</div>`}
+    <div data-gear-total>${gearTotalHtml()}</div>
     `;
   })()}
   </section>`;
@@ -2585,6 +2570,10 @@ function patchLive(el){
      表现为「表格改了时间，甘特图纹丝不动」——两处数据打架。
      局部重绘 §8，不整页 render（否则正在输入的框会失焦）。 */
   if(/^8\.行\.\d+\.(时|耗时|事)$/.test(p)) repaintGantt();
+  /* v1.0.9 修复：6.1–6.4 任一字段变化 → 重算 6.5 只读总表。
+     此前 6.5 只在首绘时算一次，用户填完 6.1–6.4 总表永远不刷新
+     （与 v1.8「生成器材总单」按钮失效同源：数据进了D，却没人读它）。*/
+  if(/^6\.(器材|滤镜|灯|附件)\.\d+\.(品|型|数|备)$/.test(p)) repaintGearTotal();
 }
 /* 总功率 = Σ(功率 × 数量)
    注意：必须写回 D，不能只写 DOM —— 否则下一次 render() 会把手填结果冲掉。
@@ -2610,6 +2599,40 @@ function syncVersion(){
   document.title='拍摄策划工作台 '+v;
   try{ localStorage.setItem('sw_app_ver',v); }catch(e){}
 }
+/* --------------------------------------------------------------------------
+   6.5 器材总表：局部重绘（修复「填了 6.1–6.4 但总表不刷新」）
+   --------------------------------------------------------------------------
+   为什么必须局部重绘：整节重绘（sec65()）会连6.1–6.4 的 input 一起重建，
+   用户正在输入的框会**失焦丢焦点**，一个字打到一半就断。
+   所以只换 6.5 自己的 innerHTML —— 上面四张表完全不动。 */
+function gearTotalHtml(){
+  const t=gearSummary();
+  if(!t.totalN){
+    return `<div class="note" style="margin:0">6.1–6.4 还没有有效条目。`
+      +`在上面的四张表里登记器材，这里会自动聚合成一张总表，导出时直接使用。</div>`;
+  }
+  return `<div class="tbl-wrap"><table class="geartotal">
+    <thead><tr><th style="width:110px">品类</th><th>型号 / 名称</th>
+      <th style="width:70px">数量</th><th style="width:90px">来源</th></tr></thead>
+    <tbody>${t.rows.map(r=>`<tr>
+      <td><b>${esc(r.品)}</b></td>
+      <td>${esc(r.型)}</td>
+      <td style="font-family:var(--fm);text-align:right">${r.q}</td>
+      <td style="color:var(--text3);font-size:11px">${esc(r.src)}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2"><b>合计</b></td>
+      <td style="font-family:var(--fm);text-align:right"><b>${t.totalP}</b></td>
+      <td style="color:var(--text3);font-size:11px">${t.totalN} 项</td></tr></tfoot>
+  </table></div>`;
+}
+function repaintGearTotal(){
+  const box=document.querySelector('[data-gear-total]');
+  if(!box) return;
+  const h=gearTotalHtml();
+  if(box.innerHTML===h) return;      /* 内容没变就不动 DOM，避免无谓重排 */
+  box.innerHTML=h;
+}
+/* 「? 汇总口径」按钮在 6.5 标题上，重绘不动它，无需重绑 */
 function updPower(){
   if(D.s7._pwAuto===false) return;          // 用户已手改，不再自动覆盖
   const t=totalW();
