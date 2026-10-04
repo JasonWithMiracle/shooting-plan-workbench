@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>拍摄策划工作台 v1.0.11</title>
+<title>拍摄策划工作台 v1.0.12</title>
 <style>
 /* ============================================================
    主题注册表 —— 新增主题只需往这里加一组 token 值
@@ -483,7 +483,7 @@ body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
     <div>
       <div class="vt">
         <h1>拍摄策划工作台</h1>
-        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.11</span>
+        <span class="ver-badge" id="verBadge" title="工具版本（每次功能迭代变更）">v1.0.12</span>
       </div>
       <div class="sub">T1-1 模板 v3.0 · 12 节（编号 0–11）</div>
     </div>
@@ -594,18 +594,23 @@ function lsSet(key, val){
 /* 安全读取 + JSON 解析 + 结构校验。
    - fallback：解析失败或结构不符时的默认值（会被深拷贝一份返回）
    - guard：可选的结构校验函数，返回 false 视为数据损坏
-   命中损坏时：把原值备份到 `${key}__broken`（最多留一份），再删除主键，
-   使下一次启动回到干净状态。 */
-function lsJSON(key, fallback, guard){
+   - opts.keepOnBad：损坏时**只备份、不删除**主键。
+     用于「用户核心数据」（整案草稿 sw_doc_v01）—— 这类数据宁可多留一份
+     残缺的，也不能因一次误判就清掉；缓存类数据（模特库/场地库）才适合
+     直接重置，因为它们可从别处重建。
+   命中损坏时：把原值备份到 `${key}__broken`（覆盖上一份），
+   非 keepOnBad 时再删除主键，使下一次启动回到干净状态。 */
+function lsJSON(key, fallback, guard, opts){
+  const keep = !!(opts && opts.keepOnBad);
   const clone = v => { try { return JSON.parse(JSON.stringify(v)); } catch(e){ return v; } };
   const bad = (why) => {
     const old = lsRaw(key);
     if (old !== null) {
       lsSet(key + '__broken', old);   // 留证，便于事后排查
-      try { localStorage.removeItem(key); } catch (e) {}
+      if (!keep) { try { localStorage.removeItem(key); } catch (e) {} }
     }
     if (window.console && console.warn) {
-      console.warn('[safeLS] 键 "' + key + '" 数据损坏已重置 → ' + why);
+      console.warn('[safeLS] 键 "' + key + '" 数据损坏' + (keep ? '（已备份，保留原值）' : '已重置') + ' → ' + why);
     }
     return clone(fallback);
   };
@@ -628,7 +633,8 @@ function lsStr(key, fallback){
 /* 供电调试：一键清空本工具的全部键（含损坏备份），恢复出厂 */
 function lsPurgeAll(){
   const keys = ['sw_doc_v01','sw_usedno','sw_models','sw_venues','sw_solar_override',
-                'sw_app_ver','sw_usedno__broken','sw_models__broken','sw_venues__broken'];
+                'sw_app_ver',
+                'sw_doc_v01__broken','sw_usedno__broken','sw_models__broken','sw_venues__broken'];
   keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
 }
 
@@ -963,7 +969,7 @@ function solarOvrHtml(){
       结果「原型 v0.1」被当成工具版本 —— 用户测试的线上版其实早已迭代过多轮，
       页面却还写着 v0.1，版本对不上。这是版本标注必须独立成徽章的原因。
    ========================================================================== */
-const APP_VER='v1.0.11', TPL_VER='v3.0';
+const APP_VER='v1.0.12', TPL_VER='v3.0';
 const LS_MODEL='sw_models', LS_VENUE='sw_venues';
 /* v1.0.12：均改走 lsJSON + 数组结构校验。
    原为裸 JSON.parse(localStorage.getItem(...))，是该键被污染时白屏的直接原因。
@@ -977,7 +983,14 @@ let VENUES = lsJSON(LS_VENUE, [], isVenueArr);   // [{id,名称,所在区,适配
 let _venueSeq = VENUES.reduce((m,v)=>Math.max(m,+String(v.id).replace(/\D/g,'')||0),0);
 const saveModels = ()=>lsSet(LS_MODEL,JSON.stringify(MODELS));
 const saveVenues= ()=>lsSet(LS_VENUE,JSON.stringify(VENUES));
-try{ const c=JSON.parse(localStorage.getItem(LS)||'null'); if(c) D=Object.assign(D,c); }catch(e){}
+/* v1.0.12：草稿读取也走 lsJSON + 对象结构校验。
+   原 try/catch 只能挡住「解析失败」，挡不住「解析成功但不是对象」
+   （例如存成数组/字符串/数字），那样 Object.assign(D, c) 会往状态对象里
+   灌进非法字段。加 guard 后，非普通对象一律视为损坏并重置。 */
+try{
+  const c = lsJSON(LS, null, v => v && typeof v === 'object' && !Array.isArray(v), {keepOnBad:true});
+  if(c) D=Object.assign(D,c);
+}catch(e){}
 /* 全新开始（非恢复草稿）时，撰写日期默认今天 —— 编号的 YYYYMMDD 段依赖它。
    恢复草稿时不覆盖用户已填的日期。 */
 if(!D.s0.撰写日期) D.s0.撰写日期 = new Date().toISOString().slice(0,10);
