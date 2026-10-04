@@ -4,7 +4,7 @@
 > 单个 HTML 文件，双击即用，离线可填，一键导出 PDF + DOCX。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v1.1.0-blue.svg)](CHANGELOG.md)
 ![HTML](https://img.shields.io/badge/HTML-single--file-orange.svg)
 
 ---
@@ -180,10 +180,10 @@
 
 | 限制 | 影响 | 计划 |
 |---|---|---|
-| DOCX 导出未实现 | 只能打印成 PDF | v1.1。技术选型已完成（`dolanmiu/docx`），但它约 1.24 MB，内联会让文件涨到 1.3 MB+ |
+| DOCX 导出未实现 | 只能打印成 PDF | 后续版本。技术选型已完成（`dolanmiu/docx`），但它约 1.24 MB，内联会让文件涨到 1.3 MB+ |
 | 数据存浏览器本地，换设备不同步 | 需手动「导出整案」再导入 | v2.1 走 File System Access 直写本地文件 |
 | §6.3 灯光与 §6.5 布光分两处登记 | 需填两次 | 已用 hint 提示分工，考虑合并 |
-| 4.94 MB 存储上限 | 约 6 个满配场地后触顶 | v2.0 加容量提示与写入告警 |
+| 浏览器本地存储上限 **4 MB**（整个网站共享） | 填满后新内容存不进去 | ✅ **v1.1已解决**：图片按≤160KB 自适应压缩 + 顶栏占用指示 + 触顶告警。实测 §11 填满 25 张样片仅占 13% |
 | Firefox / Safari | 文件系统 API 不可用 | v2.1 |
 | 存储卡换算按 0.8 安全系数 | 与厂商标称略有差异 | 系数已固定，差异见使用说明 |
 

@@ -72,6 +72,21 @@ html[data-theme="dark"] .btn.pri{color:#0f1115}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.sm{padding:4px 9px;font-size:11px}
 
+/* ============ 存储容量指示（v1.1）============
+   放在顶栏末尾，宽度固定 74px，不挤动其他按钮。
+   常态只显示一条极细的进度线，hover 才展开数字——不打扰日常填写。 */
+.cap{width:74px;flex:0 0 74px;align-self:center;cursor:default;user-select:none}
+.cap-t{display:flex;justify-content:space-between;font-size:9.5px;
+  color:var(--text3);line-height:1.4;margin-bottom:2px;
+  font-variant-numeric:tabular-nums}
+.cap-b{height:3px;border-radius:2px;background:var(--panel2);overflow:hidden}
+.cap-f{height:100%;border-radius:2px;background:var(--accent);
+  transition:width .25s ease}
+.cap.warn .cap-t{color:var(--warn,#b8860f)}
+.cap.warn .cap-f{background:var(--warn,#b8860f)}
+.cap.full .cap-t{color:#c0392b;font-weight:500}
+.cap.full .cap-f{background:#c0392b}
+
 /* ============ 布局 ============ */
 .shell{max-width:1560px;margin:0 auto;display:grid;
   grid-template-columns:212px 1fr;gap:0;align-items:start}
@@ -346,6 +361,7 @@ body[data-mode="check"] .sec-h h2::after{content:" · 核对态";
     <button class="btn" id="expBtn" title="把本策划案全部内容存成 .json 文件，可换设备导入恢复">⇩ 导出整案</button>
     <button class="btn" id="impBtn" title="从 .json 文件恢复整份策划案，会覆盖当前数据">⇧ 导入整案</button>
     <input type="file" id="impFile" accept="application/json,.json" hidden>
+    <div id="capBar" class="cap" title="浏览器本地存储占用。超出后新内容将无法保存，请先导出整案备份再删减图片"></div>
   </div>
 </div></div>
 
@@ -426,7 +442,73 @@ const AUTO_NO = {
 };
 const LS='sw_doc_v01';
 const REQ = v => !String(v??'').trim();
-const save = () => localStorage.setItem(LS, JSON.stringify(D));
+
+/* ==========================================================================
+   存储容量防护（v1.1 新增）
+   --------------------------------------------------------------------------
+   为什么需要：localStorage 是**整个 origin 共享 4 MB**（实测，非每键 4 MB），
+   而图片压到 1600px/q0.85 后单张仍可达 1.1 MB。§4 场地参考图 10 张 +
+   §11 样片 25 张，理论上远超配额。
+
+   setItem 的真实语义（实测，非推测）：**all-or-nothing**——
+   超配额时抛 QuotaExceededError，但**上一次成功写入的内容完好无损**。
+   所以危险的不是「数据全丢」，而是：
+     界面照常显示新内容 → 实际一个字节都没存进去 → 刷新后凭空消失，
+     且全程无任何提示。用户根本不知道从哪一刻起存的是假的。
+   因此必须在 save() 内部统一拦截（29 个调用点，逐个改不可靠）。
+   ========================================================================== */
+const CAP_WARN = 0.75;   /* 占用达 75% 起黄条，90% 起红条并禁用继续加图 */
+const CAP_BLOCK= 0.90;
+/* 探底真实配额：二分不划算（每次探测都要写 MB 级数据），
+   实测 Chromium file:// 与 http:// 均为 4 MB，故直接取保守值。 */
+const CAP_TOTAL = 4 * 1024 * 1024;
+
+let _capLocked = false;   /* 已因超限锁定，避免每次输入都弹窗刷屏 */
+
+/* 统计当前文档里所有 data: 图片的累计体积（精确到字节，遍历代价可接受） */
+function imgBytes(){
+  let n = 0, total = 0;
+  (function walk(x){
+    if (typeof x === 'string'){ if (x.startsWith('data:')){ n++; total += x.length; } return; }
+    if (Array.isArray(x)){ x.forEach(walk); return; }
+    if (x && typeof x === 'object'){ for (const k in x) walk(x[k]); }
+  })(D);
+  return { n, total };
+}
+/* 占用率 = 本文档实际字节 / 配额。返回 {used, total, ratio, imgN} */
+function storageStat(){
+  let used = 0;
+  try{ used = (localStorage.getItem(LS) || '').length; }catch(e){}
+  const im = imgBytes();
+  return { used, total: CAP_TOTAL, ratio: used / CAP_TOTAL, imgN: im.n };
+}
+const kb = n => (n / 1024).toFixed(0);
+
+/* 核心：所有写入都从这里过。返回 true=存成功，false=未存（已告警） */
+function save(){
+  const json = JSON.stringify(D);
+  try{
+    localStorage.setItem(LS, json);
+  }catch(err){
+    /* 关键：此时磁盘上仍是上一次成功的内容，D 里的新数据**从未落库**。
+       必须明确告知，且不能只提示一次——用户可能几分钟后才刷新页面。 */
+    if (!_capLocked){
+      _capLocked = true;
+      const im = imgBytes();
+      toast('⚠️ 存储已满，本次修改未保存\n\n'
+        +'当前占用 ' + kb(json.length) + ' KB / 上限 ' + kb(CAP_TOTAL) + ' KB\n'
+        +'图片 ' + im.n + ' 张，占 ' + kb(im.total) + ' KB（占 ' 
+        + Math.round(im.total / json.length * 100) + '%）\n\n'
+        +'你屏幕上看到的新内容**尚未写入**，刷新会丢失。\n'
+        +'请立即「导出整案」备份，然后删掉部分参考图 / 样片再继续。');
+    }
+    if (window.__capBar) window.__capBar();
+    return false;
+  }
+  _capLocked = false;
+  if (window.__capBar) window.__capBar();
+  return true;
+}
 
 let D = {
   meta:{ id:'', theme:'light', mode:'edit' },
@@ -682,16 +764,55 @@ const esc = s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'
 const wk  = ()=>{ const d=new Date(D.s0.拍摄日期||'');
   return isNaN(d)?'':'周'+'日一二三四五六'[d.getDay()]; };
 
-/* 图片压缩 → dataURL */
-async function shrink(file,max=1600,q=.85){
-  const bmp=await createImageBitmap(file);
-  let{width:w,height:h}=bmp;
-  const sc=Math.min(1,max/Math.max(w,h));
-  w=Math.round(w*sc); h=Math.round(h*sc);
-  const c=document.createElement('canvas'); c.width=w; c.height=h;
-  c.getContext('2d').drawImage(bmp,0,0,w,h);
-  const url=c.toDataURL('image/jpeg',q);
-  return {url,w,h,size:Math.round(url.length*.75)};
+/* ==========================================================================
+   图片压缩 → dataURL（v1.1 改为自适应体积控制）
+   --------------------------------------------------------------------------
+   为什么改：原实现固定「长边 1600px + q0.85」，实测单张仍可达 1.1 MB
+   （1600×1067 噪声图，是最难压的情况）。而整个 origin 的localStorage
+   只有 4 MB——十几张图就触顶，触顶后新内容静默存不进去。
+   所以目标从「压到固定尺寸」改为「**压到指定体积以内**」。
+
+   策略（顺序有讲究）：
+     ① 先把长边压到 1400px（够印刷看构图，再大纯属浪费）
+     ② 仍超标 → 逐级降 JPEG 质量（0.72→0.36），画质肉眼几乎无差
+     ③ 还超标 → 降分辨率（每轮 ×0.8，最低 900px），因为 JPEG 有体积地板，
+        噪声图再怎么降质量也压不下去，只能缩像素
+   典型人像/风景在 ①② 就收敛了，只有极端噪声图才会走到③。
+   ========================================================================== */
+const IMG_TARGET_KB = 160;      /* 单图目标上限。4MB / 160KB ≈ 25 张，够用 */
+const IMG_MAX_EDGE  = 1400;
+const IMG_MIN_EDGE  = 900;
+
+async function shrink(file, max=IMG_MAX_EDGE, q=.85, targetKB=IMG_TARGET_KB){
+  const bmp = await createImageBitmap(file);
+  const {width:ow, height:oh} = bmp;
+  const fit = m=>{ const sc=Math.min(1, m/Math.max(ow,oh));
+    return [Math.max(1,Math.round(ow*sc)), Math.max(1,Math.round(oh*sc))]; };
+  const enc = (w,h,qq)=>{
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(bmp,0,0,w,h);
+    return c.toDataURL('image/jpeg',qq);
+  };
+  const bytes = u => u.length * .75;          /* base64 → 原始字节近似 */
+
+  let [w,h] = fit(max);
+  let url = enc(w,h,q);
+
+  /* ② 逐级降质量：到此为止画质基本无损，是性价比最高的一段 */
+  if(bytes(url)/1024 > targetKB){
+    for(const qq of [.72,.62,.52,.44,.36]){
+      url = enc(w,h,qq);
+      if(bytes(url)/1024 <= targetKB) break;
+    }
+  }
+  /* ③ 仍超标 → 降分辨率（JPEG 体积地板效应，噪声图只能走这条） */
+  let guard = 0;
+  while(bytes(url)/1024 > targetKB && Math.max(w,h) > IMG_MIN_EDGE && guard++ < 4){
+    const [nw,nh] = fit(Math.round(Math.max(w,h)*.8));
+    w=nw; h=nh; url = enc(w,h,.5);
+  }
+  return {url, w, h, size:Math.round(bytes(url)),
+          over: bytes(url)/1024 > targetKB};
 }
 async function hash(s){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
@@ -712,10 +833,15 @@ function pickHTML(id,val){
 }
 async function setPick(id,file){
   if(!file||!file.type.startsWith('image/')){ toast('请选择图片文件'); return; }
-  const {url,w,h,size}=await shrink(file);
-  ASSETS[id]={mime:'image/jpeg',w,h,size,uploadedAt:new Date().toISOString()};
-  setByPath(id,url); save(); render();
-  toast('图片已嵌入该字段（长边压至 '+Math.max(w,h)+'px）');
+  const r=await shrink(file);
+  ASSETS[id]={mime:'image/jpeg',w:r.w,h:r.h,size:r.size,uploadedAt:new Date().toISOString()};
+  setByPath(id,r.url);
+  /* 存盘失败必须让用户知道——这次修改没进存储，刷新就没了 */
+  if(!save()) return;
+  render();
+  toast('图片已嵌入（'+Math.max(r.w,r.h)+'px · '
+    +Math.round(r.size/1024)+' KB）'
+    +(r.over?'\n⚠️ 已尽力压缩，仍偏大，请留意顶栏存储占用':''));
 }
 /* v1.5：把图片写入「数组字段」的指定槽位。
    区别于 setPick()——后者是标量字段（整字段只有一张图，替换即可）。
@@ -726,10 +852,10 @@ async function setPickArr(key,arr,idx,file,max){
   if(!file||!file.type.startsWith('image/')){ toast('请选择图片文件'); return false; }
   if(arr.length>=max && (idx===null||idx>=arr.length)){
     toast('最多 '+max+' 张，已达上限'); return false; }
-  const {url,w,h,size}=await shrink(file);
-  ASSETS[key+(idx===null?arr.length:idx)]={mime:'image/jpeg',w,h,size,
+  const r=await shrink(file);
+  ASSETS[key+(idx===null?arr.length:idx)]={mime:'image/jpeg',w:r.w,h:r.h,size:r.size,
     uploadedAt:new Date().toISOString()};
-  if(idx===null||idx>=arr.length) arr.push(url); else arr[idx]=url;
+  if(idx===null||idx>=arr.length) arr.push(r.url); else arr[idx]=r.url;
   return true;
 }
 
@@ -1666,8 +1792,30 @@ function render(){
     sec65(), sec7(),
     sec9(), sec10(), sec11()
   ].join('');
-  navRender(); updProg();
+  navRender(); updProg(); updCap();
 }
+
+/* 存储占用指示条：常态显示 KB / 上限，≥75% 转黄，≥90% 转红并明确警示。
+   挂到 window.__capBar 是为了让 save() 失败时也能立即刷新，不必等下次 render。 */
+function updCap(){
+  const el = $('#capBar');
+  if (!el) return;
+  const s = storageStat();
+  const pct = Math.min(100, s.ratio * 100);
+  const cls = s.ratio >= CAP_BLOCK ? 'cap full' : (s.ratio >= CAP_WARN ? 'cap warn' : 'cap');
+  el.className = cls;
+  el.innerHTML =
+    '<div class="cap-t"><span>' + kb(s.used) + '</span><span>' + kb(s.total) + 'K</span></div>'
+    + '<div class="cap-b"><div class="cap-f" style="width:' + pct.toFixed(1) + '%"></div></div>';
+  el.title = '本地存储占用 ' + kb(s.used) + ' KB / ' + kb(s.total) + ' KB（'
+    + pct.toFixed(0) + '%）\n图片 ' + s.imgN + ' 张\n'
+    + (s.ratio >= CAP_BLOCK
+        ? '⚠️ 已接近上限，新内容可能无法保存。请「导出整案」备份后删减图片。'
+        : (s.ratio >= CAP_WARN
+            ? '偏满。建议先「导出整案」备份，再删减参考图 / 样片。'
+            : '空间充足。图片会占绝大部分体积。'));
+}
+window.__capBar = updCap;
 
 /* ==========================================================================
    7. 侧边栏 + 完成度
@@ -1982,14 +2130,24 @@ document.addEventListener('change',async e=>{
     if(!files.length){ e.target.value=''; return; }
     const room=10-(D.s4.图||[]).length;
     if(files.length>room) toast('最多 10 张，已保留前 '+room+' 张');
+    let added=0, lastKB=0, blocked=false;
     for(const f of files.slice(0,room)){
-      const {url,w,h,size}=await shrink(f);
-      ASSETS['4.图.'+D.s4.图.length]={mime:'image/jpeg',w,h,size,
+      const r=await shrink(f);
+      ASSETS['4.图.'+D.s4.图.length]={mime:'image/jpeg',w:r.w,h:r.h,size:r.size,
         uploadedAt:new Date().toISOString()};
-      D.s4.图.push(url);
+      D.s4.图.push(r.url);
+      lastKB=Math.round(r.size/1024);
+      /* 每张都存一次并检查结果——批量上传最容易撞配额，
+         若中途失败必须立刻停，不能让后面几张白压 */
+      if(!save()){ blocked=true; break; }
+      added++;
     }
-    save(); render(); e.target.value='';
-    toast('已添加场地参考图（'+D.s4.图.length+'/10）'); return;
+    render(); e.target.value='';
+    toast(blocked
+      ? '⚠️ 存储已满，只加进 '+added+' 张（共 '+D.s4.图.length+'/10）\n'
+        +'单张约 '+lastKB+' KB。请「导出整案」备份后删减已有图片。'
+      : '已添加 '+added+' 张场地参考图（'+D.s4.图.length+'/10）\n单张约 '+lastKB+' KB');
+    return;
   }
   /* v1.5 §1 模特样图：定槽上传（1-2 张），一次可多选填补空槽 */
   if(fi==='1.样图.add'){
@@ -2116,7 +2274,7 @@ $('#pdfBtn').addEventListener('click',()=>gate(()=>{ window.print(); }));
    ========================================================================== */
 const EXP_FORMAT='sw-workbench';   /* 格式标识：用于将来识别不同版本 */
 function exportAll(){
-  const payload={ format:EXP_FORMAT, version:'1.0.0',
+  const payload={ format:EXP_FORMAT, version:'1.1.0',
     exportedAt:new Date().toISOString(),
     doc:D, models:MODELS, venues:VENUES, usedno:AUTO_NO.used };
   const stamp=new Date(), p=n=>String(n).padStart(2,'0');
@@ -2160,7 +2318,7 @@ async function importAll(file){
     toast('导入失败：数据格式异常\n'+err.message); }
 }
 $('#docxBtn').addEventListener('click',()=>gate(()=>toast(
-  'DOCX 导出尚未实现（v1.1 计划中）\n\n'
+  'DOCX 导出尚未实现\n\n'
   +'技术选型已完成：GitHub 上唯一全项过关的方案是 dolanmiu/docx，\n'
   +'但它约 1.24 MB，内联进单文件会让体积涨到 1.3 MB+，与「单文件轻量」的取舍冲突。\n\n'
   +'当前替代方案：顶栏「打印 / 存 PDF」→ 目标选「另存为 PDF」。')));
