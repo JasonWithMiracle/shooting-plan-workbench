@@ -533,13 +533,19 @@ tr.flash td{animation:rowflash 1.4s ease-out}
   padding:14mm 0}
 .pv-content{padding:0}
 
-/* --- 分页虚线层 --- */
+/* --- 分页虚线层 ---
+   容器铺满整张纸（含左右出血 12mm×2），便于把页码标签放在纸面之外；
+   但**虚线本体**收在版心内（186mm），不再向右溢出纸面 ——
+   早前 left/right:-12mm 让虚线横跨 210mm，视觉上像溢出错误。
+   页码标签改置**左侧纸外**，避免压住虚线末端。 */
 .pv-rules{position:absolute;left:-12mm;right:-12mm;top:0;bottom:0;
   pointer-events:none}
-.pv-rule{position:absolute;left:0;right:0;height:0;
+.pv-rule{position:absolute;left:12mm;right:12mm;height:0;
   border-top:1.5px dashed #c0392b;opacity:.85}
-.pv-rule-lb{position:absolute;right:4px;transform:translateY(-50%);
-  font:10px/1 ui-monospace,monospace;color:#c0392b;
+/* 页码标签移到纸面左侧的出血区（.pv-rule 左边缘 = 版心左界 = 纸面左缘），
+   故用负向 left 让标签整体落在纸面之外，不再压住虚线。 */
+.pv-rule-lb{position:absolute;right:calc(100% + 6px);transform:translateY(-50%);
+  font:10px/1 ui-monospace,monospace;color:#c0392b;white-space:nowrap;
   background:#fff;padding:1px 5px;border:1px solid #e6b0aa;border-radius:3px}
 /* 页内上半区/下半区底色微差，辅助判断"哪一页" */
 .pv-rule-zone{position:absolute;left:0;right:0;background:transparent}
